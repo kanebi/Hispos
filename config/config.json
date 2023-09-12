@@ -1,0 +1,19 @@
+{
+  "development": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "seamless_pos",
+    "user": "postgres",
+    "password": "lancelot24",
+    "dialect": "postgres"
+  },
+  "production": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "seamless_pos",
+    "user": "postgres",
+    "dialect": "postgres",
+
+    "password": "lancelot24"
+  }
+}
