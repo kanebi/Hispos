@@ -2,7 +2,7 @@ import {createTransport} from "nodemailer"
 
 
 const mailer = createTransport({
-  host: "smtp.forwardemail.net",
+  host: "smtp.gmail.com",
   port: 465,
   secure: true,
   auth: {

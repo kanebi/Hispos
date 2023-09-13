@@ -36,3 +36,10 @@ model Note {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   userId String
 }
+
+model ContactMessage {
+  id String @id @default(cuid())
+  fullName String
+  email String 
+  message String 
+}
