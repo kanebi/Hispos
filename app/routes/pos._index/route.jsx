@@ -1,5 +1,5 @@
 import React from "react";
-
+import { motion } from "framer-motion";
 import {
   Box,
   Header,
@@ -16,8 +16,9 @@ import {
   DataSearch,
   Tip,
   Nav,
+  TextInput,
 } from "grommet";
-import { Col, Container, Grid, Loader, Form, Row, IconButton } from "rsuite";
+import { Col, Container, Grid, Loader, Form, Row, Button as RButton, IconButton } from "rsuite";
 import "rsuite/dist/rsuite.min.css";
 import POSHeader from "../../components/layouts/pos/header";
 import CurrencyInput from "react-currency-input-field";
@@ -38,8 +39,10 @@ export default function PointOfSale(props) {
   const [loading, setloading] = React.useState(false);
   const [companyData, setCompanyData] = React.useState({
     name: "HPR",
+    shops: ["Ph shop", "alcon Shop", "gentle shop"],
     logo: "",
     url: "https://accountgig.com",
+
   });
 
   const [profileData, setProfileData] = React.useState({});
@@ -49,7 +52,9 @@ export default function PointOfSale(props) {
     last_name: "kanebi",
     first_name: "emmanuel",
     role: "Administrator",
+    defaultProfile: "Obigbo Shop"
   });
+  const [profiles, setProfiles] = React.useState(['obigbo profile', "aba profile",])
   const [itemsLoading, setItemsLoading] = React.useState(false);
   const [newSession, setNewSession] = React.useState(true);
   const [searchActive, setSearchActive] = React.useState(false);
@@ -164,21 +169,23 @@ export default function PointOfSale(props) {
                 }}
               >
                 {items.map(() => (
-                    <ProductBox>
-                      <Box
-                        height={"inherit"}
-                        pad={"small"}
-                        width={"inherit"}
-                        style={{
-                          cursor: "pointer",
-                          boxShadow:
-                            "rgb(204, 219, 232) 3px 3px 6px 0px inset, rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset",
-                        }}
-                        background={{ dark: "#42433E", light: "#f1d7f7" }}
-                      >
-                        {/* <StatusLabel> In stock</StatusLabel> */}
-                      </Box>
-                    </ProductBox>
+                  <ProductBox>
+                    <Box
+                      height={"inherit"}
+                      pad={"small"}
+                      width={"inherit"}
+                      style={{
+                        cursor: "pointer",
+                        position:"absolute",
+                        float:"right",
+                        boxShadow:
+                          "rgb(204, 219, 232) 3px 3px 6px 0px inset, rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset",
+                      }}
+                      background={{ dark: "#42433E", light: "#f1d7f7" }}
+                    >
+                      {/* <StatusLabel> In stock</StatusLabel> */}
+                    </Box>
+                  </ProductBox>
                 ))}
               </Box>
             </Container>
@@ -238,6 +245,9 @@ export default function PointOfSale(props) {
           users={systemUsers}
           newSessionVar={newSession}
           setSessionOpen={setNewSession}
+          defaultProfile={loggedInUser.defaultProfile}
+          profileList={profiles}
+          companyShops={companyData.shops}
         />
       )}
     </Container>
@@ -250,6 +260,8 @@ function NewSession(props) {
   const [closeTime, setCloseTime] = React.useState();
   const [loading, setLoading] = React.useState(false);
   const sessionFormRef = React.useRef(null);
+  const [profileList, setProfileList] = React.useState(props.profileList)
+  const [newProfile, setNewProfile] = React.useState(false)
   const handleStartPOS = () => {
     setLoading(true);
     props.setSessionOpen(false);
@@ -260,6 +272,9 @@ function NewSession(props) {
     const data = Object.fromEntries(formData);
     console.log(data);
   };
+  const handleCreateProfile = () => {
+    setNewProfile(false)
+  }
   const StyledDateTimePicker = styled(DateTimePicker)`
     & .react-datetime-picker__wrapper {
       padding: 10px;
@@ -279,113 +294,178 @@ function NewSession(props) {
         modal={true}
         background="box"
         margin={"medium"}
+        
       >
         {loading && <Loader title="Getting Ready..." backdrop center></Loader>}
 
         <Box
           height={"xlarge"}
           pad={{ vertical: "small" }}
-          style={{ overflow: "auto" }}
+          style={{ overflow: newProfile?"hidden": "auto" }}
         >
-          <Form ref={sessionFormRef}>
-            <Grid style={{ width: "80%", marginTop: "20px" }}>
-              <Row style={{ marginBottom: "20px" }}>
-                <Col md={20} lg={20} sm={20}>
-                  <Heading color={"default"} size="xxsmall" as={"h3"}>
-                    Start New POS Session
-                  </Heading>
-                </Col>
-                <Col md={4} lg={4} sm={4}>
-                  <Button
-                    primary
-                    label="Start"
-                    onClick={handleStartPOS}
-                  ></Button>
-                </Col>
-              </Row>
-              <Row style={{ marginBottom: "20px" }}>
-                <Col md={24} lg={24} sm={24}>
-                  <FormField name="openingTime" label="Opening Time">
-                    <StyledDateTimePicker
-                      name="openingTime"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e)}
-                    />
-                  </FormField>
-                </Col>
-                <Row>
-                  <Col md={24} lg={24} sm={24}>
-                    <FormField
-                      name="closeTime"
-                      style={{ border: "none" }}
-                      label="Closing Time"
-                    >
-                      <StyledDateTimePicker
-                        name="closingTime"
-                        value={closeTime}
-                        disabled={closeAutomatically}
-                        onChange={(e) => setCloseTime(e)}
-                      />{" "}
-                    </FormField>
-                    <CheckBox
-                      name="autoClose"
-                      onChange={(e) => setCloseAutomatically(e.target.checked)}
-                      label="Auto Close"
-                    />
-                  </Col>{" "}
+          {newProfile && <motion.div animate={{ y: 30 }} >
+            <Form>
+              <Grid style={{ width: "80%", marginTop: "20px" }}>
+                <Row style={{ marginBottom: "20px" }}>
+                  <Col md={20} lg={20} sm={20}>
+                    <Heading color={"default"} size="xxsmall" as={"h3"}>
+                      New Profile
+                    </Heading>
+                  </Col>
+                  <Col md={4} lg={4} sm={4}>
+                    <Button
+                      primary
+                      label="Create"
+                      onClick={handleCreateProfile}
+                    ></Button>
+                  </Col>
                 </Row>
-              </Row>
-              <Row style={{ marginBottom: "10px" }}>
-                <Col md={12} lg={12} sm={24}>
-                  <FormField label="Inventory Source">
-                    <Select
-                      name="inventorySource"
-                      defaultValue="All"
-                      // style={{ width: 220 }}
-                      options={["All", "Platform", "ERPNext"]}
-                      placeholder="Inventory Source"
-                    ></Select>
-                  </FormField>
-                </Col>
-                {props.user.isAdmin && (
-                  <Col md={12} lg={12} sm={24}>
-                    <FormField label="Sales Attendant">
-                      <Select
-                        placeholder="POS Sales Attendant"
-                        name="agent"
-                        style={{ width: 220 }}
-                        options={props.users}
+                <Row style={{ marginBottom: "20px" }}>
+                  <Col md={24} lg={24} sm={24}>
+                    <FormField name="shop" label="Shop">
+                      <Select placeholder="Select Shop" options={props.companyShops} searchPlaceholder={"find shop"} defaultValue={props.user?.defaultShop}
                       />
                     </FormField>
                   </Col>
-                )}{" "}
-              </Row>
 
-              <Row md={24} lg={24} sm={24} style={{ marginTop: "20px" }}>
-                <FormField label="Starting Balance">
-                  <CurrencyInput
-                    id="input-example"
-                    placeholder="Starting Balance"
-                    name="startingBalance"
-                    defaultValue={0.0}
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      borderColor: "whitesmoke",
-                      borderRadius: "10px",
-                      borderStyle: "inherit",
-                      backgroundColor: "inherit",
-                    }}
-                    decimalsLimit={2}
+                </Row>
+
+                <Row style={{ marginBottom: "20px" }}>
+                  <Col md={24} lg={24} sm={24}>                    <Tooltip message="Only assigned Sales Admin can approve and submit sessions sales">
+
+                    <FormField name="salesAdmin" label="Sales Administrator">
+
+                        <Select options={props.users} placeholder="Select Sales Admin" searchPlaceholder={"find manager  "}
+                        />
+                    </FormField></Tooltip>
+                  </Col>
+
+                </Row>
+
+                <Row gutter={2} style={{ marginBottom: "20px" }}>
+                  <Col md={24} lg={24} sm={24}>
+                    <FormField name="note" label="Note">
+                      <TextArea  name="note" placeholder="Note" rows={2} />
+
+                    </FormField>
+                  </Col>
+
+                </Row>
+              </Grid></Form>
+
+
+          </motion.div>}
+          <motion.div transition={"2s"} whileInView={newProfile ? { opacity: 0.5, y: 100 } : { opacity: 1, animation: "linear", y: 0 }}>
+            <Form ref={sessionFormRef} disabled={newProfile}>
+              <Grid style={{ width: "80%", marginTop: "20px" }}>
+                <Row style={{ marginBottom: "20px" }}>
+                  <Col md={20} lg={20} sm={20}>
+                    <Heading color={"default"} size="xxsmall" as={"h3"}>
+                      Start New POS Session
+                    </Heading>
+                  </Col>
+                  <Col md={4} lg={4} sm={4}>
+                    <Button
+                      primary
+                      label="Start"
+                      onClick={handleStartPOS}
+                    ></Button>
+                  </Col>
+                </Row>
+                <Row style={{ marginBottom: "20px" }}>
+                  <Col md={24} lg={24} sm={24}>
+                      <Select name="profile" placeholder="Select Profile" options={profileList} searchPlaceholder={"find profile"} defaultValue={props.defaultProfile}
+                      />
+                  
+                      <RButton  onClick={() => setNewProfile(true)} style={{ position:"absolute",border:"0.5px solid inherit", right:"0",width: "150px", height: "70px" }}>New Profile</RButton>
+                </Col>
+                </Row>
+                <Row style={{ marginBottom: "20px" }}>
+
+
+                  <Col md={24} lg={24} sm={24}>
+                    <FormField name="openingTime" label="Opening Time">
+                      <StyledDateTimePicker
+                        name="openingTime"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e)}
+                      />
+                    </FormField>
+                  </Col>
+                  <Row>
+                    <Col md={24} lg={24} sm={24}>
+                      <FormField
+                        name="closeTime"
+                        style={{ border: "none" }}
+                        label="Closing Time"
+                      >
+                        <StyledDateTimePicker
+                          name="closingTime"
+                          value={closeTime}
+                          disabled={closeAutomatically}
+                          onChange={(e) => setCloseTime(e)}
+                        />{" "}
+                      </FormField>
+                      <CheckBox
+                        name="autoClose"
+                        onChange={(e) => setCloseAutomatically(e.target.checked)}
+                        label="Auto Close"
+                      />
+                    </Col>{" "}
+                  </Row>
+                </Row>
+                <Row style={{ marginBottom: "10px" }}>
+                  <Col md={12} lg={12} sm={24}>
+                    <FormField label="Inventory Source">
+                      <Select
+                        name="inventorySource"
+                        defaultValue="All"
+                        // style={{ width: 220 }}
+                        options={["All", "Platform", "ERPNext"]}
+                        placeholder="Inventory Source"
+                      ></Select>
+                    </FormField>
+                  </Col>
+                  {props.user.isAdmin && (
+                    <Col md={12} lg={12} sm={24}>
+                      <FormField label="Sales Attendant">
+                        <Select
+                          placeholder="POS Sales Attendant"
+                          name="agent"
+                          style={{ width: 220 }}
+                          options={props.users}
+                        />
+                      </FormField>
+                    </Col>
+                  )}{" "}
+                </Row>
+
+                <Row md={24} lg={24} sm={24} style={{ marginTop: "20px" }}>
+                  <FormField label="Starting Balance">
+                    <CurrencyInput
+                      id="input-example"
+                      placeholder="Starting Balance"
+                      name="startingBalance"
+                      defaultValue={0.0}
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        borderColor: "whitesmoke",
+                        borderRadius: "10px",
+                        borderStyle: "inherit",
+                        backgroundColor: "inherit",
+                      }}
+                      decimalsLimit={2}
                     // onValueChange={(value, name) => console.log(value, name)}
-                  />
-                </FormField>
-              </Row>
-              <Row md={24} lg={24} sm={24} style={{ marginTop: "20px" }}>
-                <TextArea name="note" placeholder="Note" rows={2} />
-              </Row>
-            </Grid>
-          </Form>
+                    />
+                  </FormField>
+                </Row>
+                <Row md={24} lg={24} sm={24} style={{ marginTop: "20px" }}>
+                  <TextArea name="note" placeholder="Note" rows={2} />
+                </Row>
+              </Grid>
+            </Form>
+          </motion.div>
         </Box>
       </Layer>
     </>
