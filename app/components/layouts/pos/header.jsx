@@ -24,12 +24,13 @@ export default function POSHeader(props) {
         >
           <Navbar style={{ backgroundColor: "inherit", color: "inherit" }}>
             <Navbar.Brand href={company.website}>
-              {company.logo ? (
+              {company.logo ? 
+              (
                 <div style={{ marginTop: "-20px" }}>
                   <Heading size="small" as="h4">
                     {" "}
                     <img width={80} height={60} src={company.logo} />
-                    {company.name}
+                    {/* {company.name} */}
                   </Heading>
                 </div>
               ) : (
@@ -37,7 +38,7 @@ export default function POSHeader(props) {
                   <Heading as="h4" size="small">
                     {" "}
                     <img width={80} height={60} src={defaultLogo} />
-                    {company.name}
+                    {/* {company.name} */}
                   </Heading>
                 </div>
               )}

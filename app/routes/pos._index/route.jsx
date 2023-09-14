@@ -15,10 +15,23 @@ import {
   Grid as GGrid,
   DataSearch,
   Tip,
-  Nav,
   TextInput,
+  Text,
 } from "grommet";
-import { Col, Container, Grid, Loader, Form, Row, Button as RButton, IconButton } from "rsuite";
+import {
+  Col,
+  Container,
+  Grid,
+  Loader,
+  Form,
+  Row,
+  Button as RButton,
+  IconButton,
+  Nav,
+  Navbar,
+  Tag,
+  Stack,
+} from "rsuite";
 import "rsuite/dist/rsuite.min.css";
 import POSHeader from "../../components/layouts/pos/header";
 import CurrencyInput from "react-currency-input-field";
@@ -28,9 +41,18 @@ import DateTimePicker from "react-datetime-picker";
 import "react-datetime-picker/dist/DateTimePicker.css";
 import "react-calendar/dist/Calendar.css";
 import "react-clock/dist/Clock.css";
-
+import productIcon from "../../../public/default_images/bascket.png";
 import styled from "../../components/styled";
-import { Calculator } from "grommet-icons";
+import {
+  Calculator,
+  UserManager,
+  Search,
+  Edit,
+  Favorite,
+  Hide,
+} from "grommet-icons";
+import ItemCard from "../../components/layouts/pos/item";
+// import { Search } from "@rsuite/icons";
 export function loader({ params }) {
   return params;
 }
@@ -42,7 +64,6 @@ export default function PointOfSale(props) {
     shops: ["Ph shop", "alcon Shop", "gentle shop"],
     logo: "",
     url: "https://accountgig.com",
-
   });
 
   const [profileData, setProfileData] = React.useState({});
@@ -52,30 +73,44 @@ export default function PointOfSale(props) {
     last_name: "kanebi",
     first_name: "emmanuel",
     role: "Administrator",
-    defaultProfile: "Obigbo Shop"
+    defaultProfile: "Obigbo Shop",
   });
-  const [profiles, setProfiles] = React.useState(['obigbo profile', "aba profile",])
+  const [profiles, setProfiles] = React.useState([
+    "obigbo profile",
+    "aba profile",
+  ]);
   const [itemsLoading, setItemsLoading] = React.useState(false);
-  const [newSession, setNewSession] = React.useState(true);
+  const [newSession, setNewSession] = React.useState(false);
   const [searchActive, setSearchActive] = React.useState(false);
   const [items, setItems] = React.useState([
     {
       id: 1,
       name: "Chicken Lap",
       price_amount: "2000",
+      image: null,
       price_currency: "NGN",
+      description:"bla bla bla ba",
       price: "NGN20000",
-      stock_uom: "Kg",
+      stock_uom: "Unit",
       available_stock_quantity: 2,
+      barcode: "sfsjosjfosf9303",
+      userFav: false,
+      userPined: true,
     },
     {
-      id: 1,
+      id: 2,
       name: "Burger",
       price_amount: "3000",
       price_currency: "NGN",
+      userPined: false,
+      userFav: true,
+      description:"    llipsisOnly: invisible ellipsisOnly: visible: Pablo Diego José Francisco de Paula Juan Nepomuceno Cipriano de la Santísima Trinidad Ruiz Picasso multiLine MultiLineMessage: Pablo Diego José Francisco de Paula Juan Nepomuceno Cipriano de la Santísima Trinidad Ruiz PicassoReactNode message attribute",
       price: "NGN30000",
+      image:
+        "https://media.istockphoto.com/id/842383600/photo/colorful-jellyfish-in-the-natural-environment.webp?s=612x612&w=0&k=20&c=qGrPd_g3n4wbrbJgIwxaLPhrJVt7qlYXQQp4ZdZQTWQ=",
       stock_uom: "Kg",
       available_stock_quantity: -1,
+      barcode: "sfsjosjfosf9303",
     },
   ]);
   const [systemUsers, setSystemUser] = React.useState([
@@ -84,23 +119,17 @@ export default function PointOfSale(props) {
     "imog",
     "tobi",
   ]);
-  const ProductBox = styled.div`
-    border-radius: 6px;
-    margin: 0.3em;
-    width: 10.5vw;
-    height: 25.3vw;
-    background: #fff;
-    transition: all 300ms;
-    color: #555;
-    overflow: hidden;
-    &:hover {
-      box-shadow: rgba(150, 10, 105, 0.45) 0px 25px 20px -20px;
-    };
-    
-   
-  `;
+  const [favsOnly, setFavsOnly] = React.useState(false);
   return (
-    <Container>
+    <Container
+    // style={{
+    //             backgroundColor: "#f8d1ff",
+    //             backgroundImage:
+    //               "radial-gradient(#f745e2 0.5px, transparent 0.5px), radial-gradient(#f745e2 0.5px, #f8d1ff 0.5px)",
+    //             backgroundSize: "20px 20px",
+    //             backgroundPosition: "0 0,10px 10px",
+    //           }}
+    >
       <POSHeader
         company={companyData}
         setNewSession={setNewSession}
@@ -129,9 +158,10 @@ export default function PointOfSale(props) {
                     style={{
                       height: "40px",
                       border: "inherit",
-
+                      fontSize: "16px",
                       outline: "none",
                     }}
+                    icon={<Search size="16px" />}
                     onChange={() => setSearchActive(false)}
                     onFocus={() =>
                       searchActive === false ? setSearchActive(true) : ""
@@ -139,18 +169,50 @@ export default function PointOfSale(props) {
                     placeholder="Search Items"
                   />
                 </Tooltip>
-              </Box>
-              <Nav title="calculator" align="end">
-                <IconButton
+                <Box
                   style={{
-                    background: "inherit",
-                    height: "4 0px",
-                    boxShadow:
-                      " rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+                    position: "absolute",
+                    width: "50px",
+                    left: "210px",
+                    top: "8px",
                   }}
-                  icon={<Calculator />}
-                ></IconButton>
-              </Nav>
+                >
+                  <IconButton
+                    onClick={() => setFavsOnly(!favsOnly)}
+                    title="Show Favourites only"
+                    style={{
+                      width: "20px",
+                      background: "inherit",
+                      textAlign: "center",
+                    }}
+                  >
+                    <Favorite size="20px" fill="grey" />
+                  </IconButton>
+                </Box>
+              </Box>
+              <Navbar style={{ backgroundColor: "inherit", padding: "10px" }}>
+                <Nav title="calculator" pullRight>
+                  <IconButton
+                    style={{
+                      marginLeft: "10px",
+
+                      boxShadow:
+                        " rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+                    }}
+                    icon={<Calculator size="small" />}
+                  ></IconButton>
+                </Nav>
+                <Nav title="Customer" pullRight>
+                  <IconButton
+                    style={{
+                      marginLeft: "5px",
+                      boxShadow:
+                        " rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+                    }}
+                    icon={<UserManager size="small" />}
+                  ></IconButton>
+                </Nav>
+              </Navbar>
               {/* <Box gridArea="right" ></Box>
               </GGrid> */}
             </Header>
@@ -168,25 +230,33 @@ export default function PointOfSale(props) {
                   boxShadow: "rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
                 }}
               >
-                {items.map(() => (
-                  <ProductBox>
-                    <Box
-                      height={"inherit"}
-                      pad={"small"}
-                      width={"inherit"}
-                      style={{
-                        cursor: "pointer",
-                        position:"absolute",
-                        float:"right",
-                        boxShadow:
-                          "rgb(204, 219, 232) 3px 3px 6px 0px inset, rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset",
-                      }}
-                      background={{ dark: "#42433E", light: "#f1d7f7" }}
-                    >
-                      {/* <StatusLabel> In stock</StatusLabel> */}
-                    </Box>
-                  </ProductBox>
-                ))}
+                {/* Pinned items  */}
+                {items.map(
+                  (product, index) =>
+                    product.userPined && (
+                      <ItemCard
+                        itemsList={items}
+                        setItemsFunc={setItems}
+                        product={product}
+                        key={index}
+                        favsO={favsOnly}
+                      />
+                    ),
+                )}
+
+                {/* unpined items */}
+                {items.map(
+                  (product, index) =>
+                    !product.userPined && (
+                      <ItemCard
+                        setItemsFunc={setItems}
+                        itemsList={items}
+                        product={product}
+                        key={index}
+                        favsO={favsOnly}
+                      />
+                    ),
+                )}
               </Box>
             </Container>
           </Col>{" "}
@@ -260,8 +330,8 @@ function NewSession(props) {
   const [closeTime, setCloseTime] = React.useState();
   const [loading, setLoading] = React.useState(false);
   const sessionFormRef = React.useRef(null);
-  const [profileList, setProfileList] = React.useState(props.profileList)
-  const [newProfile, setNewProfile] = React.useState(false)
+  const [profileList, setProfileList] = React.useState(props.profileList);
+  const [newProfile, setNewProfile] = React.useState(false);
   const handleStartPOS = () => {
     setLoading(true);
     props.setSessionOpen(false);
@@ -273,8 +343,8 @@ function NewSession(props) {
     console.log(data);
   };
   const handleCreateProfile = () => {
-    setNewProfile(false)
-  }
+    setNewProfile(false);
+  };
   const StyledDateTimePicker = styled(DateTimePicker)`
     & .react-datetime-picker__wrapper {
       padding: 10px;
@@ -294,68 +364,82 @@ function NewSession(props) {
         modal={true}
         background="box"
         margin={"medium"}
-        
       >
         {loading && <Loader title="Getting Ready..." backdrop center></Loader>}
 
         <Box
           height={"xlarge"}
           pad={{ vertical: "small" }}
-          style={{ overflow: newProfile?"hidden": "auto" }}
+          style={{ overflow: newProfile ? "hidden" : "auto" }}
         >
-          {newProfile && <motion.div animate={{ y: 30 }} >
-            <Form>
-              <Grid style={{ width: "80%", marginTop: "20px" }}>
-                <Row style={{ marginBottom: "20px" }}>
-                  <Col md={20} lg={20} sm={20}>
-                    <Heading color={"default"} size="xxsmall" as={"h3"}>
-                      New Profile
-                    </Heading>
-                  </Col>
-                  <Col md={4} lg={4} sm={4}>
-                    <Button
-                      primary
-                      label="Create"
-                      onClick={handleCreateProfile}
-                    ></Button>
-                  </Col>
-                </Row>
-                <Row style={{ marginBottom: "20px" }}>
-                  <Col md={24} lg={24} sm={24}>
-                    <FormField name="shop" label="Shop">
-                      <Select placeholder="Select Shop" options={props.companyShops} searchPlaceholder={"find shop"} defaultValue={props.user?.defaultShop}
-                      />
-                    </FormField>
-                  </Col>
-
-                </Row>
-
-                <Row style={{ marginBottom: "20px" }}>
-                  <Col md={24} lg={24} sm={24}>                    <Tooltip message="Only assigned Sales Admin can approve and submit sessions sales">
-
-                    <FormField name="salesAdmin" label="Sales Administrator">
-
-                        <Select options={props.users} placeholder="Select Sales Admin" searchPlaceholder={"find manager  "}
+          {newProfile && (
+            <motion.div animate={{ y: 30 }}>
+              <Form>
+                <Grid style={{ width: "80%", marginTop: "20px" }}>
+                  <Row style={{ marginBottom: "20px" }}>
+                    <Col md={20} lg={20} sm={20}>
+                      <Heading color={"default"} size="xxsmall" as={"h3"}>
+                        New Profile
+                      </Heading>
+                    </Col>
+                    <Col md={4} lg={4} sm={4}>
+                      <Button
+                        primary
+                        label="Create"
+                        onClick={handleCreateProfile}
+                      ></Button>
+                    </Col>
+                  </Row>
+                  <Row style={{ marginBottom: "20px" }}>
+                    <Col md={24} lg={24} sm={24}>
+                      <FormField name="shop" label="Shop">
+                        <Select
+                          placeholder="Select Shop"
+                          options={props.companyShops}
+                          searchPlaceholder={"find shop"}
+                          defaultValue={props.user?.defaultShop}
                         />
-                    </FormField></Tooltip>
-                  </Col>
+                      </FormField>
+                    </Col>
+                  </Row>
 
-                </Row>
+                  <Row style={{ marginBottom: "20px" }}>
+                    <Col md={24} lg={24} sm={24}>
+                      {" "}
+                      <Tooltip message="Only assigned Sales Admin can approve and submit sessions sales">
+                        <FormField
+                          name="salesAdmin"
+                          label="Sales Administrator"
+                        >
+                          <Select
+                            options={props.users}
+                            placeholder="Select Sales Admin"
+                            searchPlaceholder={"find manager  "}
+                          />
+                        </FormField>
+                      </Tooltip>
+                    </Col>
+                  </Row>
 
-                <Row gutter={2} style={{ marginBottom: "20px" }}>
-                  <Col md={24} lg={24} sm={24}>
-                    <FormField name="note" label="Note">
-                      <TextArea  name="note" placeholder="Note" rows={2} />
-
-                    </FormField>
-                  </Col>
-
-                </Row>
-              </Grid></Form>
-
-
-          </motion.div>}
-          <motion.div transition={"2s"} whileInView={newProfile ? { opacity: 0.5, y: 100 } : { opacity: 1, animation: "linear", y: 0 }}>
+                  <Row gutter={2} style={{ marginBottom: "20px" }}>
+                    <Col md={24} lg={24} sm={24}>
+                      <FormField name="note" label="Note">
+                        <TextArea name="note" placeholder="Note" rows={2} />
+                      </FormField>
+                    </Col>
+                  </Row>
+                </Grid>
+              </Form>
+            </motion.div>
+          )}
+          <motion.div
+            transition={"2s"}
+            whileInView={
+              newProfile
+                ? { opacity: 0.5, y: 100 }
+                : { opacity: 1, animation: "linear", y: 0 }
+            }
+          >
             <Form ref={sessionFormRef} disabled={newProfile}>
               <Grid style={{ width: "80%", marginTop: "20px" }}>
                 <Row style={{ marginBottom: "20px" }}>
@@ -374,15 +458,29 @@ function NewSession(props) {
                 </Row>
                 <Row style={{ marginBottom: "20px" }}>
                   <Col md={24} lg={24} sm={24}>
-                      <Select name="profile" placeholder="Select Profile" options={profileList} searchPlaceholder={"find profile"} defaultValue={props.defaultProfile}
-                      />
-                  
-                      <RButton  onClick={() => setNewProfile(true)} style={{ position:"absolute",border:"0.5px solid inherit", right:"0",width: "150px", height: "70px" }}>New Profile</RButton>
-                </Col>
+                    <Select
+                      name="profile"
+                      placeholder="Select Profile"
+                      options={profileList}
+                      searchPlaceholder={"find profile"}
+                      defaultValue={props.defaultProfile}
+                    />
+
+                    <RButton
+                      onClick={() => setNewProfile(true)}
+                      style={{
+                        position: "absolute",
+                        border: "0.5px solid inherit",
+                        right: "0",
+                        width: "150px",
+                        height: "70px",
+                      }}
+                    >
+                      New Profile
+                    </RButton>
+                  </Col>
                 </Row>
                 <Row style={{ marginBottom: "20px" }}>
-
-
                   <Col md={24} lg={24} sm={24}>
                     <FormField name="openingTime" label="Opening Time">
                       <StyledDateTimePicker
@@ -408,7 +506,9 @@ function NewSession(props) {
                       </FormField>
                       <CheckBox
                         name="autoClose"
-                        onChange={(e) => setCloseAutomatically(e.target.checked)}
+                        onChange={(e) =>
+                          setCloseAutomatically(e.target.checked)
+                        }
                         label="Auto Close"
                       />
                     </Col>{" "}
@@ -456,7 +556,7 @@ function NewSession(props) {
                         backgroundColor: "inherit",
                       }}
                       decimalsLimit={2}
-                    // onValueChange={(value, name) => console.log(value, name)}
+                      // onValueChange={(value, name) => console.log(value, name)}
                     />
                   </FormField>
                 </Row>
