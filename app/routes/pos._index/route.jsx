@@ -17,6 +17,7 @@ import {
   Tip,
   TextInput,
   Text,
+  ResponsiveContext,
 } from "grommet";
 import {
   Col,
@@ -52,6 +53,7 @@ import {
   Hide,
 } from "grommet-icons";
 import ItemCard from "../../components/layouts/pos/item";
+import itemSeed from "../../components/seeds/itemSeed";
 // import { Search } from "@rsuite/icons";
 export function loader({ params }) {
   return params;
@@ -82,44 +84,48 @@ export default function PointOfSale(props) {
   const [itemsLoading, setItemsLoading] = React.useState(false);
   const [newSession, setNewSession] = React.useState(false);
   const [searchActive, setSearchActive] = React.useState(false);
-  const [items, setItems] = React.useState([
-    {
-      id: 1,
-      name: "Chicken Lap",
-      price_amount: "2000",
-      image: null,
-      price_currency: "NGN",
-      description:"bla bla bla ba",
-      price: "NGN20000",
-      stock_uom: "Unit",
-      available_stock_quantity: 2,
-      barcode: "sfsjosjfosf9303",
-      userFav: false,
-      userPined: true,
-    },
-    {
-      id: 2,
-      name: "Burger",
-      price_amount: "3000",
-      price_currency: "NGN",
-      userPined: false,
-      userFav: true,
-      description:"    llipsisOnly: invisible ellipsisOnly: visible: Pablo Diego José Francisco de Paula Juan Nepomuceno Cipriano de la Santísima Trinidad Ruiz Picasso multiLine MultiLineMessage: Pablo Diego José Francisco de Paula Juan Nepomuceno Cipriano de la Santísima Trinidad Ruiz PicassoReactNode message attribute",
-      price: "NGN30000",
-      image:
-        "https://media.istockphoto.com/id/842383600/photo/colorful-jellyfish-in-the-natural-environment.webp?s=612x612&w=0&k=20&c=qGrPd_g3n4wbrbJgIwxaLPhrJVt7qlYXQQp4ZdZQTWQ=",
-      stock_uom: "Kg",
-      available_stock_quantity: -1,
-      barcode: "sfsjosjfosf9303",
-    },
-  ]);
+  const [items, setItems] = React.useState(itemSeed);
+  const screenSize = React.useContext(ResponsiveContext)
   const [systemUsers, setSystemUser] = React.useState([
     "kanebi",
     "doffe",
     "imog",
     "tobi",
   ]);
+  
+  const [itemsList, setItemsList] = React.useState(itemSeed)
   const [favsOnly, setFavsOnly] = React.useState(false);
+  
+  const resetItems = () => {
+    setItems(itemsList);
+  };
+  const handleSearchItems=()=>{
+  
+  
+  }
+  const handlePinItem =()=>{
+  
+  }
+  
+  const handleFavItem = ()=>{
+  
+  }
+  
+  const handleShowFavOnly =( )=>{
+  if (favsOnly === false){
+  setFavsOnly(true);
+  const favList = itemsList.filter(itm => itm.userFav === true)
+  
+  setItems(favList) }
+  
+  else{
+  setFavsOnly(false)
+  resetItems()
+  }
+  
+  }
+  
+  
   return (
     <Container
     // style={{
@@ -178,7 +184,7 @@ export default function PointOfSale(props) {
                   }}
                 >
                   <IconButton
-                    onClick={() => setFavsOnly(!favsOnly)}
+                    onClick={handleShowFavOnly}
                     title="Show Favourites only"
                     style={{
                       width: "20px",
@@ -186,7 +192,8 @@ export default function PointOfSale(props) {
                       textAlign: "center",
                     }}
                   >
-                    <Favorite size="20px" fill="grey" />
+                  
+                    <Favorite size="20px" enableBackground={"red"} />
                   </IconButton>
                 </Box>
               </Box>
@@ -219,18 +226,30 @@ export default function PointOfSale(props) {
           </Col>
         </Row>
         <Row gutter={10} style={{ margin: "10px", marginBottom: "0px" }}>
-          <Col sm={24} lg={14} xl={14} md={14}>
+          <Col sm={24} lg={15} xl={15} md={15}>
             <Container className="Pos-Items-container">
               <Box
-                pad={"small"}
+                // pad={"small"}
                 height={"medium"}
                 round={{ size: "xsmall" }}
                 style={{
-                  // display:"inline-block",
-                  boxShadow: "rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
+                  display: "block!important",
+                  overflow: "hidden",
+                  overflowY: "scroll",
+                  paddingRight: "0px!important",
+                  paddingLeft: screenSize === "medium" ? "15px" : "5px",
+                  paddingTop: "10px",
+                  paddingBottom: "10px",
+                  scrollMargin: "0px !important",
+                  scrollBehavior: "smooth",
+                  scrollbarColor: "inherit",
+                  scrollbarGutter: "stable",
+                  scrollbarWidth: "thin",
+                  boxShadow: "rgba(159, 112, 212, 0.2) 0px 7px 29px 0px",
                 }}
               >
                 {/* Pinned items  */}
+
                 {items.map(
                   (product, index) =>
                     product.userPined && (
@@ -260,7 +279,7 @@ export default function PointOfSale(props) {
               </Box>
             </Container>
           </Col>{" "}
-          <Col sm={24} lg={10} md={10} xl={10}>
+          <Col sm={24} lg={9} md={9} xl={9}>
             <Container className="Pos-Order-container">
               <Box
                 pad={"small"}
@@ -278,7 +297,7 @@ export default function PointOfSale(props) {
           </Col>
         </Row>
         <Row gutter={10}>
-          <Col style={{ marginTop: "10px" }} sm={24} lg={14} xl={14} md={14}>
+          <Col style={{ marginTop: "10px" }} sm={24} lg={15} xl={15} md={15}>
             <Container className="Pos-customer-container">
               <Box
                 pad={"small"}
@@ -290,8 +309,8 @@ export default function PointOfSale(props) {
               </Box>
             </Container>
           </Col>{" "}
-          <Col sm={24} lg={8} xl={10} md={10}>
-            <Container className="Pos-customer-container">
+          <Col sm={24} lg={9} xl={9} md={9}>
+            <Container className="Pos-checkout-container">
               <Box
                 pad={"small"}
                 height={"203px"}
