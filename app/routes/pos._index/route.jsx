@@ -92,40 +92,42 @@ export default function PointOfSale(props) {
     "imog",
     "tobi",
   ]);
-  
+
   const [itemsList, setItemsList] = React.useState(itemSeed)
   const [favsOnly, setFavsOnly] = React.useState(false);
-  
+
+
+  React.useEffect(() => {
+    // update the itemsList or origin list 
+    const newItemsList = itemsList.map(itm => (items.find(prd => prd.id === itm.id)))
+    setItemsList(newItemsList)
+
+
+  }, [items])
   const resetItems = () => {
-    setItems(itemsList);
+    // setItems(itemsList);
   };
-  const handleSearchItems=()=>{
-  
-  
+  const handleSearchItems = () => {
+
+
   }
-  const handlePinItem =()=>{
-  
+
+  const handleShowFavOnly = () => {
+    if (favsOnly === false) {
+      setFavsOnly(true);
+      const favList = itemsList.filter(itm => itm.userFav === true)
+
+      setItems(favList)
+    }
+
+    else {
+      setFavsOnly(false)
+      resetItems()
+    }
+
   }
-  
-  const handleFavItem = ()=>{
-  
-  }
-  
-  const handleShowFavOnly =( )=>{
-  if (favsOnly === false){
-  setFavsOnly(true);
-  const favList = itemsList.filter(itm => itm.userFav === true)
-  
-  setItems(favList) }
-  
-  else{
-  setFavsOnly(false)
-  resetItems()
-  }
-  
-  }
-  
-  
+
+
   return (
     <Container
     // style={{
@@ -192,8 +194,8 @@ export default function PointOfSale(props) {
                       textAlign: "center",
                     }}
                   >
-                  
-                    <Favorite size="20px" enableBackground={"red"} />
+
+                    <Favorite size="20px" color={favsOnly ? "active" : "default"} />
                   </IconButton>
                 </Box>
               </Box>
@@ -252,28 +254,50 @@ export default function PointOfSale(props) {
 
                 {items.map(
                   (product, index) =>
-                    product.userPined && (
-                      <ItemCard
-                        itemsList={items}
-                        setItemsFunc={setItems}
-                        product={product}
-                        key={index}
-                        favsO={favsOnly}
-                      />
+                    product?.userPined && (
+                      <div style={{
+                        display: "inline-block", width: "10.9vw",
+
+                        height: "27vh", overflow: "hidden", borderRadius: "6px",
+
+                        margin: "0.2em",
+                      }}>
+
+                        <ItemCard
+                          itemsList={items}
+                          setItemsFunc={setItems}
+                          product={product}
+                          key={index}
+                          favsO={favsOnly}
+                          originItemList={itemsList}
+
+                        />
+                      </div>
                     ),
                 )}
 
                 {/* unpined items */}
                 {items.map(
                   (product, index) =>
-                    !product.userPined && (
-                      <ItemCard
-                        setItemsFunc={setItems}
-                        itemsList={items}
-                        product={product}
-                        key={index}
-                        favsO={favsOnly}
-                      />
+                    !product?.userPined && (
+                      <div style={{
+                        display: "inline-block", width: "10.9vw",
+
+                        height: "27vh", overflow: "hidden", borderRadius: "6px",
+
+                        margin: "0.2em",
+                      }}>
+
+
+                        <ItemCard
+                          setItemsFunc={setItems}
+                          itemsList={items}
+                          product={product}
+                          originItemList={itemsList}
+                          key={index}
+                          favsO={favsOnly}
+                        />
+                      </div>
                     ),
                 )}
               </Box>
@@ -575,7 +599,7 @@ function NewSession(props) {
                         backgroundColor: "inherit",
                       }}
                       decimalsLimit={2}
-                      // onValueChange={(value, name) => console.log(value, name)}
+                    // onValueChange={(value, name) => console.log(value, name)}
                     />
                   </FormField>
                 </Row>

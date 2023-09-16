@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Box, Heading, Text } from "grommet";
+import { Box, Heading, ResponsiveContext, Text } from "grommet";
 import "rsuite/dist/rsuite.min.css";
 
 import { Button as RButton, Tag, Stack, Divider } from "rsuite";
@@ -12,9 +12,10 @@ import { Pined } from "@rsuite/icons";
 import { FloatArea, Tooltip } from "smarthr-ui";
 
 export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
-  const [pined, setPined] = React.useState(product.userPined);
-  const [faved, setFaved] = React.useState(product.userFav);
+  const [pined, setPined] = React.useState(product?.userPined);
+  const [faved, setFaved] = React.useState(product?.userFav);
   const [carted, setCarted] = React.useState(false);
+  const [screenSize, setScreenSize] = React.useContext(ResponsiveContext)
 
   const handleAddToCart = () => {
     setCarted(true);
@@ -22,30 +23,37 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
   };
 
   const handlePinItem = () => {
-    setPined(!pined);
     const prod = product;
-    prod.userPined = pined;
+    prod.userPined = !pined;
     const newItems = itemsList.filter((itm) => itm.id !== product.id);
-    console.log(newItems);
     setItemsFunc([prod, ...newItems]);
+    setPined(!pined);
+
+    // update origin list
   };
   const handleFavItem = () => {
+    const prod = product;
+    prod.userFav = !faved;
+    console.log(prod)
+    const newItems = itemsList.map(itm=> itm.id !== prod.id?itm: prod )
+    console.log(newItems)
+   
+
+    setItemsFunc([...newItems]);
     setFaved(!faved);
+
+    // update origin list 
   };
   return (
-  
     <motion.div
       id={`item-${product.id}-card`}
       className="itm-card"
       initial={{
         borderRadius: "6px",
-        width: "10.9vw",
-        display:"inline-block!important",
-            
-        height: "22vh",
-        margin: "0.3em",
         transition: " all 100ms",
+        width: "10.9vw",
 
+        height: "27vh",
         color: "#555",
         // scale:  favsO && faved===false && 0
         opacity:
@@ -54,23 +62,25 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
               ? 1
               : 0
             : 1,
-        overflow: "hidden",
       }}
       // whileTap={{scale:"50%"}}
       whileHover={{ boxShadow: "rgba(120, 107, 135, 0.1) 0px 4px 12px" }}
-      // display: favsO && faved && "none",
+    // display: favsO && faved && "none",
     >
       <Tooltip
         multiLine={true}
+
         message={
           <Box
             background={"box"}
+            margin={0}
             style={{
               textAlign: "center",
+
               height: "auto",
               maxHeight: "30vh",
               borderRadius: "10px",
-              width: "400px",
+              width: "500px!important",
               scrollbarWidth: "thin",
               overflowY: "auto",
               overflowX: "hidden",
@@ -110,9 +120,8 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
           style={{
             cursor: "pointer",
             textAlign: "center",
-            backgroundImage: `url(${
-              product.image ? product.image : productIcon
-            })`,
+            backgroundImage: `url(${product.image ? product.image : productIcon
+              })`,
             backgroundSize: product.image ? "100%" : "45%",
             backgroundPosition: "center",
             backgroundPositionY: product.image ? "center" : "35%",
@@ -200,10 +209,11 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
                       lineHeight: 1,
                       textAlign: "left",
                       height: "15px",
-                      maxWidth: "70px",
+                      maxWidth: screenSize === "m" ? "50px" : "70px",
                       textOverflow: "ellipsis",
                       overflow: "hidden",
                     }}
+                    title={product.name}
                   >
                     {product.name}
                   </span>
@@ -214,10 +224,11 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
                       fontWeight: "bold",
                       textAlign: "left",
                       height: "18px",
-                      maxWidth: "80px",
+                      maxWidth: screenSize === "m" ? "70px" : "80px",
                       textOverflow: "ellipsis",
                       overflow: "hidden",
                     }}
+                    title={product.price}
                   >
                     {product.price}
                   </Tag>
@@ -226,23 +237,28 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
               <Stack
                 style={{ margin: 2, marginLeft: "4px", zIndex: 9999 }}
                 direction="row"
-                spacing={7}
+                spacing={3}
               >
                 <RButton
                   onClick={handleFavItem}
-                  style={{ backgroundColor: faved ? "#eac0fa" : "" }}
-                  title="favourite"
+                  active={faved ? true : false}
+
+                  style={{ maxWidth: screenSize === "m" ? "40px" : "inherit" }}
+                  title="Favourite"
                 >
                   <Favorite />
                 </RButton>
                 <RButton
                   onClick={handlePinItem}
-                  style={{ backgroundColor: pined ? "#eac0fa" : "" }}
+                  active={pined ? true : false}
+
+                  style={{ maxWidth: screenSize === "m" ? "40px" : "inherit" }}
                   title="Pin to top"
                 >
-                  <Pin></Pin>
+                  <Pin  ></Pin>
                 </RButton>
                 <RButton
+                  style={{ maxWidth: screenSize === "m" ? "40px" : "inherit" }}
                   onClick={() => window.open(`/inventory/edit/${product.id}`)}
                   title="Edit"
                 >
