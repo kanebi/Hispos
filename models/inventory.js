@@ -59,6 +59,7 @@ export const Item = sequelize.define(
     },
     barcode: { type: DataTypes.STRING, allowNull: true },
     brand: { type: DataTypes.STRING, allowNull: true },
+    tax: { type: DataTypes.NUMBER, defaultValue:0 },
     variant_based_on: {
       type: DataTypes.ENUM,
       defaultValue: "Item Attribute",
@@ -67,7 +68,7 @@ export const Item = sequelize.define(
     },
     min_order_qty: {
       type: DataTypes.DECIMAL,
-      defaultValue: 0.0,
+      defaultValue: 1,
       allowNull: true,
     },
     has_variants: {

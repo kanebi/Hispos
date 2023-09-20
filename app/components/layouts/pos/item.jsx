@@ -16,6 +16,16 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
   const [faved, setFaved] = React.useState(product?.userFav);
   const [carted, setCarted] = React.useState(false);
   const [screenSize, setScreenSize] = React.useContext(ResponsiveContext)
+  const [screenHeight, setScreenHeight] = React.useState(undefined)
+  
+  React.useEffect(()=>{
+  
+  if (typeof document !== undefined){
+  
+  setScreenHeight(document.body.clientHeight)
+  }
+  
+  }, [])
 
   const handleAddToCart = () => {
     setCarted(true);
@@ -56,24 +66,18 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
         height: "27vh",
         color: "#555",
         // scale:  favsO && faved===false && 0
-        opacity:
-          favsO === true
-            ? faved === true
-              ? 1
-              : 0
-            : 1,
+        opacity: favsO === true ? (faved === true ? 1 : 0) : 1,
       }}
       // whileTap={{scale:"50%"}}
       whileHover={{ boxShadow: "rgba(120, 107, 135, 0.1) 0px 4px 12px" }}
-    // display: favsO && faved && "none",
+      // display: favsO && faved && "none",
     >
       <Tooltip
         multiLine={true}
-
         message={
           <Box
             background={"box"}
-            margin={0}
+            margin={"0px"}
             style={{
               textAlign: "center",
 
@@ -120,8 +124,9 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
           style={{
             cursor: "pointer",
             textAlign: "center",
-            backgroundImage: `url(${product.image ? product.image : productIcon
-              })`,
+            backgroundImage: `url(${
+              product.image ? product.image : productIcon
+            })`,
             backgroundSize: product.image ? "100%" : "45%",
             backgroundPosition: "center",
             backgroundPositionY: product.image ? "center" : "35%",
@@ -235,15 +240,21 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
                 </Text>
               </Box>
               <Stack
-                style={{ margin: 2, marginLeft: "4px", zIndex: 9999 }}
+                style={{
+                  margin: 2,
+                  marginLeft: screenHeight < 600 ? "4px" : "2px",
+                  zIndex: 9999,
+                }}
                 direction="row"
                 spacing={3}
               >
                 <RButton
                   onClick={handleFavItem}
                   active={faved ? true : false}
-
-                  style={{ maxWidth: screenSize === "m" ? "40px" : "inherit" }}
+                  style={{
+                    maxWidth:
+                      screenHeight && screenHeight < 580 ? "40px" : "inherit",
+                  }}
                   title="Favourite"
                 >
                   <Favorite />
@@ -251,14 +262,19 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
                 <RButton
                   onClick={handlePinItem}
                   active={pined ? true : false}
-
-                  style={{ maxWidth: screenSize === "m" ? "40px" : "inherit" }}
+                  style={{
+                    maxWidth:
+                      screenHeight && screenHeight < 580 ? "40px" : "inherit",
+                  }}
                   title="Pin to top"
                 >
-                  <Pin  ></Pin>
+                  <Pin></Pin>
                 </RButton>
                 <RButton
-                  style={{ maxWidth: screenSize === "m" ? "40px" : "inherit" }}
+                  style={{
+                    maxWidth:
+                      screenHeight && screenHeight < 580 ? "40px" : "inherit",
+                  }}
                   onClick={() => window.open(`/inventory/edit/${product.id}`)}
                   title="Edit"
                 >
