@@ -15,6 +15,7 @@ import {
   Grid as GGrid,
   DataSearch,
   Tip,
+  Tag as GTag,
   TextInput,
   Text,
   ResponsiveContext,
@@ -33,11 +34,13 @@ import {
   Tag,
   Stack,
   Divider,
+  Modal,
+  Input,
 } from "rsuite";
 import "rsuite/dist/rsuite.min.css";
 import POSHeader from "../../components/layouts/pos/header";
 import CurrencyInput from "react-currency-input-field";
-import { FaHandsIcon, StatusLabel, Tooltip } from "smarthr-ui";
+import { FaBoxIcon, FaHandsIcon, StatusLabel, Tooltip } from "smarthr-ui";
 import DateTimePicker from "react-datetime-picker";
 import SelectCurrency from "@paylike/react-currency-select";
 import "react-datetime-picker/dist/DateTimePicker.css";
@@ -54,11 +57,14 @@ import {
   Hide,
   Pause,
   Resume,
+  Cart,
+  Grid as IGrid,List as IList
 } from "grommet-icons";
 import ItemCard from "../../components/layouts/pos/item";
 import itemSeed from "../../components/seeds/itemSeed";
 import { uid } from "react-uid";
 import POSCartItem from "../../components/layouts/pos/cartItem";
+import { CheckOutline, Icon, Minus } from "@rsuite/icons";
 // import { Search } from "@rsuite/icons";
 export function loader({ params }) {
   return params;
@@ -220,6 +226,13 @@ export default function PointOfSale(props) {
   const [defaultCurrency, setDefaultCurrency] = React.useState(
     sessionProfile.defaultCurrency,
   );
+
+  const [checkoutType, setCheckoutType] = React.useState("Active");
+  const [cartGridView, setCartGridView] = React.useState(false)
+  const [itemEditOn, setItemEditOn] = React.useState(false)
+  const [currentItemOnEdit, setCurrentItemOnEdit] =React.useState(null)
+  
+  
   React.useEffect(() => {
     // update the itemsList or origin list
     const newItemsList = itemsList.map(
@@ -235,6 +248,13 @@ export default function PointOfSale(props) {
     const availableCarts = cartItems.filter((crt) => crt.onHold === false);
     for (let i = 0; i < availableCarts.length; i++) {
       const cart = availableCarts[i];
+      if (cart.onHold === true && activeCart === cart.id) {
+        if (cartItems.filter((itm) => itm.onHold === false).length >= 1) {
+          setActiveCart(cartItems.filter((itm) => itm.onHold === false)[0]);
+        } else {
+          setActiveCart(null);
+        }
+      }
       var crtItmSum = 0;
       // convert to default currency if necessary
       for (let i = 0; i < cart.items.length; i++) {
@@ -280,6 +300,18 @@ export default function PointOfSale(props) {
     setCartsHeld(!cartsHeld);
   };
 
+  const checkoutButtonStyle = {
+    width: "100%",
+    top: "-20px",
+    margin: "20px",
+    height: "inherit",
+    alignSelf: "center",
+    justify: "center",
+    padding: "30px",
+    fontSize: "30px",
+    backgroundColor: "inherit",
+    boxShadow: "rgba(136, 165, 191, 0.48) 6px 2px 16px 0px",
+  };
   return (
     <Container
     // style={{
@@ -384,16 +416,38 @@ export default function PointOfSale(props) {
                     icon={<Calculator size="small" />}
                   ></IconButton>
                 </Nav>
-                <Nav title="Edit Customer" pullRight>
+
+                <Nav title="Cart Grid View" pullRight>
                   <IconButton
                     style={{
                       marginLeft: "5px",
                       boxShadow:
                         " rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
                     }}
-                    icon={<UserManager size="small" />}
+                    onClick={() => setCartGridView(!cartGridView)}
+                    icon={
+                      cartGridView ? (
+                        <IList size="small" />
+                      ) : (
+                        <IGrid size="small" />
+                      )
+                    }
                   ></IconButton>
                 </Nav>
+                {itemEditOn && (
+                  <Nav title="Hide Item Edit View" pullRight>
+                    <IconButton
+                      style={{
+                        marginLeft: "5px",
+                        padding: "6.5px",
+                        boxShadow:
+                          " rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+                      }}
+                      onClick={() => setItemEditOn(false)}
+                      icon={<Hide size="20px" />}
+                    ></IconButton>
+                  </Nav>
+                )}
               </Navbar>
               {/* <Box gridArea="right" ></Box>
               </GGrid> */}
@@ -498,7 +552,7 @@ export default function PointOfSale(props) {
                 style={{
                   borderBottomRightRadius: "0px",
                   borderBottomLeftRadius: "0px",
-                  overflowX: "hidden",
+                  overflow: "hidden",
                   overflowY: "auto",
                   scrollBehavior: "smooth",
                   scrollbarWidth: "thin",
@@ -506,42 +560,125 @@ export default function PointOfSale(props) {
               >
                 {cartItems.map((cart, index) => (
                   <div
-                    onClick={() => setActiveCart(cart.id)}
+                    onClick={() =>
+                      cart.onHold === false ? setActiveCart(cart.id) : ""
+                    }
                     style={{ cursor: "pointer" }}
                     key={index + "cart-" + index}
                   >
                     <POSCartItem
+                      setEdit={setItemEditOn}
+                      setCurrentEdit={setCurrentItemOnEdit}
                       cart={cart}
+                      gridView={cartGridView}
                       handleUpdateCartFunc={handleUpdateCart}
                       defaultCurrencyV={defaultCurrency}
                       active={cart.id === activeCart}
                     />
                   </div>
                 ))}
-                <Stack
-                  direction="row"
-                  style={{
-                    alignContent: "center",
-                    alignItems: "center",
-                    alignSelf: "center",
+
+                <motion.div
+                  initial={{
+                    position: "absolute",
+                    zIndex: 100,
+                    top: 0,
+                    // x: 300,
+                    width: "100%",
+                    direction: "rtl",
+                    opacity: 0,
+                  }}
+                  animate={{
+                    left: itemEditOn ? 0 : 500,
+                    right: itemEditOn ? 0 : "",
+                    opacity: itemEditOn ? 1 : 0,
                   }}
                 >
-                  {" "}
-                  <Divider vertical />
-                  <Heading as={"h3"} size="xxsmall" color={"default"}>
-                    Total :
-                  </Heading>
-                  <Divider vertical />
-                  <Heading
-                    as={"h3"}
-                    style={{ padding: "5px" }}
-                    size="xxsmall"
-                    color={"default"}
+                  <Box
+                    pad={"small"}
+                    round={{ size: "3px" }}
+                    height={"medium"}
+                    background={"box"}
                   >
-                    {defaultCurrency} {cartsTotal}
-                  </Heading>
-                  <Divider vertical />
-                </Stack>
+                    <Header> 
+                    <Box alignSelf="end" align="end" justify="end">
+                      <Button
+                        
+                        pad={"xsmall"}
+                        label="Cancel"
+                        primary
+                        onClick={() => setItemEditOn(false)}
+                      ></Button></Box>
+                    <Box alignSelf="start" align="end" justify="start">
+                      <Heading size="xxsmall" as={"h4"} alignSelf="start">
+                        {currentItemOnEdit?.item.name}
+                      </Heading></Box>
+                      
+                      
+                     
+                    </Header>
+                    <Divider></Divider>
+                    <Form >
+                    
+                    <Input placeholder="Name">
+                    
+                    </Input>
+                    <Input placeholder="Tax">
+                    
+                    </Input>
+                    <Input placeholder="Edit Rate">
+                    
+                    </Input>
+                    <Container>
+                    <Input placeholder="Coupon Code ">
+                    
+                    </Input>
+                    <RButton>Apply Coupon</RButton>
+                    </Container>
+                    </Form>
+                  </Box>
+                </motion.div>
+
+                <Box round={{ size: "20px" }} width={"xlarge"} pad={"small"}>
+                  <Stack
+                    direction="row"
+                    style={{
+                      alignContent: "center",
+                      width: "100%",
+                      alignItems: "center",
+                      alignSelf: "center",
+                      borderSpacing: "5px",
+                      boxShadow:
+                        "rgba(240, 46, 170, 0.4) 0px 5px, rgba(240, 46, 170, 0.3) 0px 10px, rgba(240, 46, 170, 0.2) 0px 15px, rgba(240, 46, 170, 0.1) 0px 20px, rgba(240, 46, 170, 0.05) 0px 25px",
+                    }}
+                  >
+                    {" "}
+                    <Divider
+                      vertical
+                      style={{ margin: "0px", marginRight: "5px" }}
+                    />
+                    <Heading as={"h3"} size="xxsmall" color={"default"}>
+                      Total
+                    </Heading>
+                    <Divider
+                      vertical
+                      style={{
+                        margin: "0px",
+                        marginLeft: "5px",
+                        marginRight: "5px",
+                      }}
+                    />
+                    <Heading
+                      as={"h3"}
+                      style={{ padding: "5px" }}
+                      size="xxsmall"
+                      color={"default"}
+                    >
+                      {defaultCurrency} {cartsTotal}
+                    </Heading>
+                    <Divider vertical />
+                  </Stack>
+                </Box>
                 <Divider />
               </Box>
             </Container>
@@ -569,10 +706,66 @@ export default function PointOfSale(props) {
                 style={{
                   borderTopRightRadius: "0px",
                   borderTopLeftRadius: "0px",
+                  boxShadow:
+                    " rgba(135, 112, 133, 0.35) 0px -50px 36px -28px inset rgba(0, 0, 0, 0.06) 0px 2px 4px 0px inset",
                 }}
-                background={"brand"}
               >
-                Checkout Container
+                <Box
+                  alignContent="center"
+                  style={{ padding: "5px", width: "100%" }}
+                  background={{ dark: "#353036", light: "#e4c3eb" }}
+                  justify="center"
+                  align="center"
+                >
+                  <Stack direction="row">
+                    <GTag
+                      value={"All Carts"}
+                      onClick={() => setCheckoutType("All")}
+                      style={{
+                        backgroundColor:
+                          checkoutType === "All" ? "#be91e6" : "inherit",
+                        cursor: "pointer",
+                      }}
+                    ></GTag>
+
+                    <Minus color="#e9adff" />
+                    <GTag
+                      value={"Active Cart"}
+                      onClick={() => {
+                        setCheckoutType("Active");
+                        cartItems.filter(
+                          (crt) =>
+                            crt.onHold === false && crt.id !== activeCart,
+                        ).length >= 1
+                          ? setActiveCart(
+                              cartItems.filter(
+                                (crt) =>
+                                  crt.onHold === false && crt.id !== activeCart,
+                              )[0].id,
+                            )
+                          : "";
+                      }}
+                      style={{
+                        opacity: activeCart === null ? "0.5" : 1,
+                        backgroundColor:
+                          checkoutType === "Active" ? "#be91e6" : "inherit",
+                        cursor: "pointer",
+                      }}
+                    ></GTag>
+                  </Stack>
+                </Box>
+                <Divider />{" "}
+                <Box
+                  background={{ dark: "#a695a3", light: "#FCD8C9" }}
+                  pad={"none"}
+                  style={{ height: "30px" }}
+                >
+                  {" "}
+                  <RButton style={checkoutButtonStyle} startIcon={<Cart />}>
+                    {" "}
+                    Checkout{" "}
+                  </RButton>{" "}
+                </Box>
               </Box>
             </Container>
           </Col>{" "}

@@ -22,6 +22,8 @@ import {
   FlexboxGrid,
   Tag,
   Input,
+  Tooltip,
+  Whisper,
 } from "rsuite";
 import { uid } from "react-uid";
 import productIcon from "../../../../public/default_images/bascket.png";
@@ -29,9 +31,16 @@ import itemSeed from "../../seeds/itemSeed";
 import { FaMinusIcon, FaPlusIcon } from "smarthr-ui";
 import { toast } from "react-toastify";
 
-const CartItem = ({ item }) => {
+const CartItem = ({ item, updateCartItemFunc, gridViewV,onClickFunc }) => {
   const [quantity, setQuantity] = React.useState(item.quantity);
-
+  const [totalItemSum, setTotalItemSum] = React.useState(0);
+  React.useEffect(() => {
+    setTotalItemSum(
+      +item.item.price_amount * item.quantity + item.quantity * +item.item.tax,
+    );
+    item.quantity = quantity;
+    updateCartItemFunc(item);
+  }, [quantity]);
   const styleCenter = {
     display: "flex",
     justifyContent: "center",
@@ -40,11 +49,11 @@ const CartItem = ({ item }) => {
   };
   const handleReduceItem = () => {
     // handle if item can go below available stock
-    if (item.item.min_order_qty < quantity) {
+    if (item.item.min_order_qty <= quantity - 1) {
       if (
         (item.item.available_stock_quantity <= 1 &&
           item.item.allow_negative_stock === true) ||
-        item.item.available_stock_quantity >= 1
+        item.item.available_stock_quantity >= quantity - 1
       ) {
         setQuantity(quantity - 1);
       } else {
@@ -56,31 +65,117 @@ const CartItem = ({ item }) => {
   };
   const handleTopItem = ({ value = null }) => {
     // handle if item can exceed availabel  stock
-    if (isNaN(value)) {
-      return setQuantity(quantity);
-    }
-    if (value.trim().length <= 0) {
-      return setQuantity(quantity);
-    }
-    if (
-      (value && value >= item.item.min_order_qty) ||
-      quantity + 1 >= item.item.min_order_qty
-    ) {
-      if (value !== null || value !== undefined) {
-        return setQuantity(value);
+    if (value !== null && value !== undefined) {
+      if (isNaN(value)) {
+        return setQuantity("");
+      }
+      if (value.trim().length <= 0) {
+        return setQuantity("");
+      }
+      value = value.trim();
+      if (
+        +value >= item.item.min_order_qty &&
+        +value <= item.item.available_stock_quantity
+      ) {
+        return setQuantity(+value);
       } else {
-        return toast.info("Quantity less than required Item minimun quantity");
+        toast.info(
+          "Qty lower than minimum stock Qty or Qty more than available Stock Qty",
+        );
+      }
+    } else {
+      if (
+        quantity + 1 >= item.item.min_order_qty &&
+        quantity + 1 <= item.item.available_stock_quantity
+      ) {
+        setQuantity(quantity + 1);
+      } else {
+        toast.info(
+          "Qty lower than minimum stock Qty or Qty more than available Stock Qty",
+        );
       }
     }
-    setQuantity(quantity + 1);
   };
-  return (
+  return gridViewV ? (
+    <Whisper
+      trigger="hover"
+      placement="top"
+      speaker={
+        <Tooltip>
+          {" "}
+          Total :{item.item.price_currency}
+          {totalItemSum}
+        </Tooltip>
+      }
+    >
+      <Stack direction="column">
+        <Box
+          onClick={onClickFunc}
+          style={{
+            fontWeight: "bolder",
+            fontSize: "17px",
+            lineHeight: 1.5,
+            maxWidth: "70px",
+            maxHeight: "20px",
+            height: "20px",
+            textOverflow: "ellipsis",
+            overflowY: "hidden",
+          }}
+        >
+          <Text>{item.item.name}</Text>
+        </Box>
+        <Box
+          justify="center"
+          onClick={onClickFunc}
+          alignSelf="center"
+          align="center"
+          alignContent="center"
+        >
+          <img
+            width={"70%"}
+            // height={"80%"}
+            src={item.item.image ? item.item.image : productIcon}
+          ></img>
+        </Box>
+        <Text
+          style={{
+            lineHeight: 1,
+            height: "5px",
+            overflow: "hidden",
+            maxWidth: "80px",
+
+            maxHeight: "10px",
+            overflowY: "hidden",
+          }}
+        >
+          <small>{item.item.price}</small>
+        </Text>
+
+        <Box title="Item Name">
+          <Input
+            style={{
+              margin: "5px",
+              // background: "inherit",
+              width: "70px",
+              height: "30px",
+              textAlign: "center",
+              fontSize: "20px",
+              fontWeight: "bolder",
+              outline: "none",
+            }}
+            onChange={(val) => handleTopItem({ value: val })}
+            value={quantity}
+          ></Input>
+        </Box>
+      </Stack>
+    </Whisper>
+  ) : (
     <List.Item key={item.item.name} style={{ marginBottom: "10px" }}>
       <FlexboxGrid>
         <FlexboxGrid.Item colspan={6} style={{ ...styleCenter }}>
           <>
-            <Stack direction="column">
-              <Box>
+            <Stack onClick={onClickFunc} direction="column">
+              <Box >
                 <img
                   width={50}
                   height={50}
@@ -192,9 +287,7 @@ const CartItem = ({ item }) => {
                   overflow: "hidden",
                 }}
               >
-                {item.item.price_currency}{" "}
-                {+item.item.price_amount * item.quantity +
-                  item.quantity * +item.item.tax}
+                {item.item.price_currency} {totalItemSum}
               </Text>
             </Box>
           </Stack>
@@ -203,9 +296,20 @@ const CartItem = ({ item }) => {
     </List.Item>
   );
 };
-export default function POSCartItem({ cart, active, defaultCurrencV, handleUpdateCartFunc }) {
+
+
+export default function POSCartItem({
+  cart,
+  active,
+  defaultCurrencV,
+  handleUpdateCartFunc,
+  gridView,
+  setEdit,
+  setCurrentEdit
+}) {
   const [held, setHeld] = React.useState(cart.onHold);
   const [cartTotal, setCartTotal] = React.useState(cart.totalPrice);
+  const [cartItems, setCartItems] = React.useState(cart.items);
 
   React.useEffect(() => {
     setHeld(cart.onHold);
@@ -218,8 +322,9 @@ export default function POSCartItem({ cart, active, defaultCurrencV, handleUpdat
         +crtItm.quantity * +crtItm.item.tax;
     }
     setCartTotal(crtItmSum);
-    
-  }, [cart.onHold]);
+    cart.items = cartItems;
+    handleUpdateCartFunc(cart);
+  }, [cart.onHold, cartItems]);
 
   const tertiaryLinks = [
     {
@@ -232,12 +337,18 @@ export default function POSCartItem({ cart, active, defaultCurrencV, handleUpdat
     { text: "Delete", icon: Trash, color: "red", onClick: () => deleteCart() },
   ];
 
+  const updateCartItem = (item) => {
+    const newCartItems = cartItems.map((itm) =>
+      itm.id !== item.id ? item : itm,
+    );
+    setCartItems(newCartItems);
+  };
+
   const deleteCart = () => {};
   const holdCart = () => {
-    cart.onHold = !held
-    handleUpdateCartFunc(cart) 
+    cart.onHold = !held;
+    handleUpdateCartFunc(cart);
     setHeld(!held);
-
   };
 
   return (
@@ -262,13 +373,66 @@ export default function POSCartItem({ cart, active, defaultCurrencV, handleUpdat
             overflow: "hidden",
           }}
         >
-          <List hover>
-            {cart.items.map((itm, index) => (
-              <div key={itm.name + "-cartitem"}>
-                <CartItem item={itm} />
-              </div>
-            ))}
-          </List>
+          {gridView ? (
+            <List hover>
+              <FlexboxGrid justify="start">
+                {cart.items.map((itm, index) => (
+                  <FlexboxGrid.Item
+                    key={itm.name + "-cartitem"}
+                    style={{ marginRight: "5px" }}
+                    colspan={6}
+                  >
+                    {" "}
+                    <motion.div
+                      initial={{
+                        opacity: 0,
+                      }}
+                      animate={{
+                        opacity: 1,
+                      }}
+                      key={itm.name + "-cartitem"}
+                    >
+                      <List.Item>
+                        <CartItem
+                          onClickFunc={() => {
+                            setEdit(true);
+                            setCurrentEdit(itm);
+                          }}
+                          updateCartItemFunc={updateCartItem}
+                          gridViewV={gridView}
+                          item={itm}
+                        />
+                      </List.Item>{" "}
+                    </motion.div>
+                  </FlexboxGrid.Item>
+                ))}
+              </FlexboxGrid>
+            </List>
+          ) : (
+            <List hover>
+              {cart.items.map((itm, index) => (
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                  }}
+                  animate={{
+                    opacity: 1,
+                  }}
+                  key={itm.name + "-cartitem"}
+                >
+                  <CartItem
+                    onClickFunc={() => {
+                      setEdit(true);
+                      setCurrentEdit(itm);
+                    }}
+                    updateCartItemFunc={updateCartItem}
+                    gridViewV={gridView}
+                    item={itm}
+                  />
+                </motion.div>
+              ))}
+            </List>
+          )}
         </CardBody>
         <Divider style={{ margin: "5px", padding: "0px" }} />
         <Box
