@@ -19,6 +19,7 @@ import {
   TextInput,
   Text,
   ResponsiveContext,
+  Image,
 } from "grommet";
 import {
   Col,
@@ -36,6 +37,8 @@ import {
   Divider,
   Modal,
   Input,
+  FlexboxGrid,
+  List,
 } from "rsuite";
 import "rsuite/dist/rsuite.min.css";
 import POSHeader from "../../components/layouts/pos/header";
@@ -58,13 +61,16 @@ import {
   Pause,
   Resume,
   Cart,
-  Grid as IGrid,List as IList
+  Grid as IGrid,
+  List as IList,
 } from "grommet-icons";
 import ItemCard from "../../components/layouts/pos/item";
 import itemSeed from "../../components/seeds/itemSeed";
 import { uid } from "react-uid";
 import POSCartItem from "../../components/layouts/pos/cartItem";
-import { CheckOutline, Icon, Minus } from "@rsuite/icons";
+import { CheckOutline, Coupon, Icon, Minus } from "@rsuite/icons";
+import EditCartItem from "../../components/layouts/pos/editCartItem";
+import { toast } from "react-toastify";
 // import { Search } from "@rsuite/icons";
 export function loader({ params }) {
   return params;
@@ -129,9 +135,11 @@ export default function PointOfSale(props) {
             barcode: "sdfjso7890jsf",
             userFav: false,
             userPined: true,
+            warehouse: "obigbp",
           },
           quantity: 2,
           taxtTotal: "333",
+          percDiscount: 0,
           totalPrice: "NGN3600",
         },
         {
@@ -181,9 +189,11 @@ export default function PointOfSale(props) {
             tax: "9",
             allow_negative_stock: false,
             userPined: true,
+            warehouse: "olomoro",
           },
           quantity: 3,
           taxtTotal: "93",
+          percDiscount: 0,
           totalPrice: "NGN5100",
         },
         {
@@ -203,9 +213,12 @@ export default function PointOfSale(props) {
             userFav: false,
             tax: "2.22",
             userPined: true,
+            warehouse: "obidgo",
           },
           taxtTotal: "4",
           quantity: 2,
+          percDiscount: 0,
+
           totalPrice: "NGN5200",
         },
       ],
@@ -220,19 +233,24 @@ export default function PointOfSale(props) {
     defaultCurrency: "NGN",
     shop: "Ellen Store",
     salesAdmin: "Kanebi",
+    allowAdminDiscount: true,
     note: "Bla blan bla bla bla bla bla bla i am the son of the most High",
   });
 
   const [defaultCurrency, setDefaultCurrency] = React.useState(
-    sessionProfile.defaultCurrency,
+    sessionProfile?.defaultCurrency,
   );
 
   const [checkoutType, setCheckoutType] = React.useState("Active");
-  const [cartGridView, setCartGridView] = React.useState(false)
-  const [itemEditOn, setItemEditOn] = React.useState(false)
-  const [currentItemOnEdit, setCurrentItemOnEdit] =React.useState(null)
-  
-  
+  const [cartGridView, setCartGridView] = React.useState(false);
+  const [itemEditOn, setItemEditOn] = React.useState(false);
+  const [currentItemOnEdit, setCurrentItemOnEdit] = React.useState(null);
+  const [orderCoupon, setOrderCoupon] = React.useState("");
+  const cartOnEditRef = React.useRef(null);
+
+  const [editTargetValue, setEditTargetValue] = React.useState("");
+  const [editTargetField, setEditTargetField] = React.useState(null);
+
   React.useEffect(() => {
     // update the itemsList or origin list
     const newItemsList = itemsList.map(
@@ -268,6 +286,10 @@ export default function PointOfSale(props) {
 
     setCartsTotal(cartsTotalSum);
   }, [items, cartItems]);
+
+  const handleApplyCoupon = () => {};
+
+  const handleMakeDiscount = () => {};
 
   const handleUpdateCart = (cart) => {
     const newCarts = cartItems.map((crt) => (crt.id !== cart.id ? crt : cart));
@@ -312,15 +334,83 @@ export default function PointOfSale(props) {
     backgroundColor: "inherit",
     boxShadow: "rgba(136, 165, 191, 0.48) 6px 2px 16px 0px",
   };
+
+  const handleCartEditSubmit = () => {
+    alert("heard");
+  };
+  const handleRemoveItemFromCart = () => {
+    setItemEditOn(false);
+    setCurrentItemOnEdit(null);
+  };
+  const handleKeyInput = (val) => {
+    if (
+      !["quantity", "remove", "price", "discount", "tax"].includes(val) &&
+      editTargetField === null
+    ) {
+      toast.info("Select a field to edit");
+    }
+    if (isNaN(val) && val !== "" && val !== ".") {
+      
+        switch (val) {
+          case "delete":
+            setEditTargetValue("");
+            handleKeyInput("");
+            break;
+          case "remove":
+            handleRemoveItemFromCart(currentItemOnEdit);
+            break;
+          default:
+            setEditTargetField(val);
+            break;
+        
+      }
+    } else {
+      setEditTargetValue(String(editTargetValue) + String(val));
+      switch (editTargetField) {
+        case "quantity":
+          if (val !== "") {
+            cartOnEditRef.current.setQuantityFunc(val);
+          } else if (val === "") {
+            cartOnEditRef.current.clearQuantity();
+          }
+          break;
+        case "discount":
+          if (val === "") {
+            cartOnEditRef.current.clearDiscount();
+          } else {
+            cartOnEditRef.current.setPercDiscountFunc(val);
+          }
+          break;
+        case "price":
+          if (val === "") {
+            cartOnEditRef.current.clearPrice();
+          } else {
+            cartOnEditRef.current.setpriceAmountFunc(val);
+          }
+          break;
+        case "tax":
+          if (val === "") {
+            cartOnEditRef.current.clearTax();
+          } else {
+            cartOnEditRef.current.setTaxFunc(val);
+          }
+          break;
+
+        default:
+          break;
+      }
+    }
+  };
   return (
     <Container
-    // style={{
-    //             backgroundColor: "#f8d1ff",
-    //             backgroundImage:
-    //               "radial-gradient(#f745e2 0.5px, transparent 0.5px), radial-gradient(#f745e2 0.5px, #f8d1ff 0.5px)",
-    //             backgroundSize: "20px 20px",
-    //             backgroundPosition: "0 0,10px 10px",
-    //           }}
+      // style={{
+      //             backgroundColor: "#f8d1ff",
+      //             backgroundImage:
+      //               "radial-gradient(#f745e2 0.5px, transparent 0.5px), radial-gradient(#f745e2 0.5px, #f8d1ff 0.5px)",
+      //             backgroundSize: "20px 20px",
+      //             backgroundPosition: "0 0,10px 10px",
+      //           }}
+      style={{ overflowX: "hidden" }}
     >
       <POSHeader
         company={companyData}
@@ -394,7 +484,7 @@ export default function PointOfSale(props) {
                       boxShadow:
                         " rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
                     }}
-                    title={cartsHeld ? "Resume Carts" : "Hold Cart"}
+                    title={cartsHeld ? "Resume All Carts" : "Hold All Carts"}
                     icon={
                       cartsHeld ? (
                         <Resume size="small" />
@@ -558,6 +648,11 @@ export default function PointOfSale(props) {
                   scrollbarWidth: "thin",
                 }}
               >
+                <Header>
+                  <Heading size="xxsmall" color={"default"} as={"h4"}>
+                    Item Carts
+                  </Heading>
+                </Header>
                 {cartItems.map((cart, index) => (
                   <div
                     onClick={() =>
@@ -572,73 +667,74 @@ export default function PointOfSale(props) {
                       cart={cart}
                       gridView={cartGridView}
                       handleUpdateCartFunc={handleUpdateCart}
-                      defaultCurrencyV={defaultCurrency}
+                      defaultCurrencV={defaultCurrency}
                       active={cart.id === activeCart}
                     />
                   </div>
                 ))}
+                {currentItemOnEdit && (
+                  <motion.div
+                    initial={{
+                      position: "absolute",
+                      zIndex: 0,
+                      top: 0,
+                      // x: 300,
+                      width: "100%",
+                      direction: "rtl",
+                      opacity: 0,
 
-                <motion.div
-                  initial={{
-                    position: "absolute",
-                    zIndex: 100,
-                    top: 0,
-                    // x: 300,
-                    width: "100%",
-                    direction: "rtl",
-                    opacity: 0,
-                  }}
-                  animate={{
-                    left: itemEditOn ? 0 : 500,
-                    right: itemEditOn ? 0 : "",
-                    opacity: itemEditOn ? 1 : 0,
-                  }}
-                >
-                  <Box
-                    pad={"small"}
-                    round={{ size: "3px" }}
-                    height={"medium"}
-                    background={"box"}
+                      overflow: "hidden",
+                    }}
+                    animate={{
+                      left: itemEditOn ? 0 : 500,
+                      right: itemEditOn ? 0 : "",
+                      opacity: itemEditOn ? 1 : 0,
+                    }}
+                    style={{ display: itemEditOn ? "block" : "none" }}
                   >
-                    <Header> 
-                    <Box alignSelf="end" align="end" justify="end">
-                      <Button
-                        
-                        pad={"xsmall"}
-                        label="Cancel"
-                        primary
-                        onClick={() => setItemEditOn(false)}
-                      ></Button></Box>
-                    <Box alignSelf="start" align="end" justify="start">
-                      <Heading size="xxsmall" as={"h4"} alignSelf="start">
-                        {currentItemOnEdit?.item.name}
-                      </Heading></Box>
-                      
-                      
-                     
-                    </Header>
-                    <Divider></Divider>
-                    <Form >
-                    
-                    <Input placeholder="Name">
-                    
-                    </Input>
-                    <Input placeholder="Tax">
-                    
-                    </Input>
-                    <Input placeholder="Edit Rate">
-                    
-                    </Input>
-                    <Container>
-                    <Input placeholder="Coupon Code ">
-                    
-                    </Input>
-                    <RButton>Apply Coupon</RButton>
-                    </Container>
-                    </Form>
-                  </Box>
-                </motion.div>
-
+                    <Box
+                      pad={"small"}
+                      round={{ size: "3px" }}
+                      height={"medium"}
+                      background={"box"}
+                    >
+                      <Header>
+                        <Box alignSelf="end" align="end" justify="end">
+                          <Button
+                            pad={"xsmall"}
+                            label="Cancel"
+                            primary
+                            onClick={() => setItemEditOn(false)}
+                          ></Button>
+                        </Box>
+                        <Box alignSelf="start" align="end" justify="start">
+                          <Stack direction="row">
+                            <Heading size="xxsmall" as={"h4"} alignSelf="start">
+                              {currentItemOnEdit?.item?.name}
+                            </Heading>
+                            <Image
+                              sizes="xxsmall"
+                              height={40}
+                              width={40}
+                              margin={"xxsmall"}
+                              src={currentItemOnEdit?.item.image || productIcon}
+                            ></Image>
+                          </Stack>
+                        </Box>
+                      </Header>
+                      <Divider style={{ margin: "5px", padding: "2px" }}>
+                        Edit Item
+                      </Divider>{" "}
+                      <EditCartItem
+                        ref={cartOnEditRef}
+                        handleSubmitCartEdit={handleCartEditSubmit}
+                        currentItemOnEditV={currentItemOnEdit}
+                        sessionProfileV={sessionProfile}
+                        setActiveField={setEditTargetField}
+                      />
+                    </Box>
+                  </motion.div>
+                )}
                 <Box round={{ size: "20px" }} width={"xlarge"} pad={"small"}>
                   <Stack
                     direction="row"
@@ -713,24 +809,25 @@ export default function PointOfSale(props) {
                 <Box
                   alignContent="center"
                   style={{ padding: "5px", width: "100%" }}
-                  background={{ dark: "#353036", light: "#e4c3eb" }}
+                  // background={{ dark: "#353036", light: "#e4c3eb" }}
                   justify="center"
                   align="center"
                 >
                   <Stack direction="row">
-                    <GTag
-                      value={"All Carts"}
+                    <Button
+                      label={"All Carts"}
+                      primary
                       onClick={() => setCheckoutType("All")}
                       style={{
-                        backgroundColor:
-                          checkoutType === "All" ? "#be91e6" : "inherit",
-                        cursor: "pointer",
+                        backgroundColor: checkoutType !== "All" && "inherit",
                       }}
-                    ></GTag>
+                    ></Button>
 
                     <Minus color="#e9adff" />
-                    <GTag
-                      value={"Active Cart"}
+                    <Button
+                      label={"Active Cart"}
+                      // background={{ dark: "#a695a3", light: "#FCD8C9" }}
+
                       onClick={() => {
                         setCheckoutType("Active");
                         cartItems.filter(
@@ -745,28 +842,383 @@ export default function PointOfSale(props) {
                             )
                           : "";
                       }}
+                      primary
                       style={{
                         opacity: activeCart === null ? "0.5" : 1,
-                        backgroundColor:
-                          checkoutType === "Active" ? "#be91e6" : "inherit",
-                        cursor: "pointer",
+                        backgroundColor: checkoutType !== "Active" && "inherit",
                       }}
-                    ></GTag>
+                    ></Button>
                   </Stack>
                 </Box>
-                <Divider />{" "}
+                <Divider style={{ margin: "5px" }} /> {/* Coupon Code  */}
+                <Box
+                  width={"70%"}
+                  round={{ size: "xxsmall" }}
+                  background="box"
+                  margin={"small"}
+                  style={{ display: "block" }}
+                >
+                  <Box
+                    style={{ display: "inline-block" }}
+                    background={"box"}
+                    width={"70%"}
+                  >
+                    <TextInput
+                      round={{ size: "xxsmall" }}
+                      style={{
+                        background: "inherit",
+                        padding: "10px",
+                        height: "inherit",
+                        border: "none",
+                      }}
+                      onChange={(e) => setOrderCoupon(e.target.value)}
+                      placeholder="Coupon Code"
+                      value={orderCoupon}
+                      name="coupon"
+                    ></TextInput>
+                  </Box>
+                  <Box width={"30%"} style={{ display: "inline-block" }}>
+                    <RButton
+                      onClick={handleApplyCoupon}
+                      endIcon={<Coupon />}
+                      style={{
+                        width: "100%",
+                        height: "inherit",
+                        background: "inherit",
+
+                        padding: "10.5px",
+                      }}
+                    >
+                      Apply
+                    </RButton>
+                  </Box>
+                </Box>
                 <Box
                   background={{ dark: "#a695a3", light: "#FCD8C9" }}
                   pad={"none"}
                   style={{ height: "30px" }}
                 >
-                  {" "}
-                  <RButton style={checkoutButtonStyle} startIcon={<Cart />}>
+                  <RButton
+                    style={checkoutButtonStyle}
+                    startIcon={<Cart color="darkgrey" />}
+                  >
                     {" "}
                     Checkout{" "}
                   </RButton>{" "}
                 </Box>
               </Box>
+              {itemEditOn && currentItemOnEdit && (
+                <motion.div
+                  initial={{
+                    position: "absolute",
+                    zIndex: 0,
+                    // x: 300,
+                    width: "100%",
+                    direction: "rtl",
+                    opacity: 0,
+                    left: 0,
+                    bottom: 0,
+                    height: "100%",
+
+                    overflow: "hidden",
+                  }}
+                  animate={{
+                    top: itemEditOn ? 0 : 500,
+                    right: itemEditOn ? 0 : "",
+
+                    opacity: itemEditOn ? 1 : 0,
+                  }}
+                  style={{ display: itemEditOn ? "block" : "none" }}
+                >
+                  <Box
+                    pad={"small"}
+                    round={{ size: "3px" }}
+                    height={"100%"}
+                    background={"box"}
+                  >
+                    <Box
+                      style={{
+                        paddding: "0px",
+                        margin: "0px",
+                        alignItems: "center",
+                        marginTop: "-10px",
+                        justifyItems: "center",
+                      }}
+                    >
+                      <Stack spacing={10} direction="row">
+                        <Text>
+                          Total Quantity: {currentItemOnEdit.quantity}
+                        </Text>
+                        <Text>
+                          Grand Total : {defaultCurrency}{" "}
+                          {+currentItemOnEdit.item.price_amount *
+                            +currentItemOnEdit.quantity +
+                            +currentItemOnEdit.quantity *
+                              +currentItemOnEdit.item.tax}
+                        </Text>
+                      </Stack>
+                    </Box>
+                    <List>
+                      <List.Item
+                        style={{
+                          padding: "0px",
+                          width: "100%",
+                          margin: "0 auto",
+                          textAlign: "center ",
+                          backgroundColor: "inherit",
+                        }}
+                      >
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "20px",
+                            fontWeight: "bold",
+                          }}
+                          active={editTargetField === "quantity" ? true : false}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={"quantity"}
+                        >
+                          Quantity
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "25px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={3}
+                        >
+                          3
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "25px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={2}
+                        >
+                          2
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "30%",
+                            margin: "2.5px",
+                            fontSize: "25px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={1}
+                        >
+                          {" "}
+                          1
+                        </RButton>
+                      </List.Item>
+
+                      <List.Item
+                        style={{
+                          padding: "0px",
+                          width: "100%",
+                          margin: "0 auto",
+                          textAlign: "center ",
+                          backgroundColor: "inherit",
+                        }}
+                      >
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "20px",
+                            fontWeight: "bold",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={"discount"}
+                          active={editTargetField === "discount" ? true : false}
+                        >
+                          Discount
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "25px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={6}
+                        >
+                          6
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "25px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={5}
+                        >
+                          5
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "30%",
+                            margin: "2.5px",
+                            fontSize: "25px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={4}
+                        >
+                          {" "}
+                          4
+                        </RButton>
+                      </List.Item>
+                      <List.Item
+                        style={{
+                          padding: "0px",
+                          width: "100%",
+                          margin: "0 auto",
+                          textAlign: "center ",
+                          backgroundColor: "inherit",
+                        }}
+                      >
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "20px",
+                            fontWeight: "bold",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={"price"}
+                          active={editTargetField === "price" ? true : false}
+                        >
+                          Price
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "25px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={9}
+                        >
+                          9
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "25px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={8}
+                        >
+                          8
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "30%",
+                            margin: "2.5px",
+                            fontSize: "25px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={7}
+                        >
+                          {" "}
+                          7
+                        </RButton>
+                      </List.Item>
+                      <List.Item
+                        style={{
+                          padding: "0px",
+                          width: "100%",
+                          margin: "0 auto",
+                          textAlign: "center ",
+                          backgroundColor: "inherit",
+                        }}
+                      >
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "20px",
+                            fontWeight: "bold",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={"remove"}
+                        >
+                          Remove
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "20px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={"delete"}
+                        >
+                          Clear
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "20%",
+                            margin: "2.5px",
+                            fontSize: "25px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={0}
+                        >
+                          0
+                        </RButton>
+                        <RButton
+                          style={{
+                            height: "25%",
+                            width: "30%",
+                            margin: "2.5px",
+                            fontSize: "25px",
+                            fontWeight: "bolder",
+                          }}
+                          onClick={(e) => handleKeyInput(e.target.value)}
+                          value={"."}
+                        >
+                          {" "}
+                          .
+                        </RButton>
+                      </List.Item>
+                    </List>
+                  </Box>
+                </motion.div>
+              )}
             </Container>
           </Col>{" "}
         </Row>
@@ -881,7 +1333,7 @@ function NewSession(props) {
                   </Row>
 
                   <Row style={{ marginBottom: "20px" }}>
-                    <Col md={24} lg={24} sm={24}>
+                    <Col md={16} lg={16} sm={16}>
                       {" "}
                       <Tooltip message="Only assigned Sales Admin can approve and submit sessions sales">
                         <FormField
@@ -895,6 +1347,14 @@ function NewSession(props) {
                           />
                         </FormField>
                       </Tooltip>
+                    </Col>
+                    <Col md={6} lg={6} sm={6}>
+                      <FormField
+                        name="allowAdminDiscount"
+                        label="Allow Sales Admin Discounts"
+                      >
+                        <CheckBox />
+                      </FormField>
                     </Col>
                   </Row>
                   <Row style={{ marginBottom: "20px" }}>

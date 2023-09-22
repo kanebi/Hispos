@@ -175,7 +175,7 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV,onClickFunc }) => {
         <FlexboxGrid.Item colspan={6} style={{ ...styleCenter }}>
           <>
             <Stack onClick={onClickFunc} direction="column">
-              <Box >
+              <Box>
                 <img
                   width={50}
                   height={50}
@@ -183,7 +183,20 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV,onClickFunc }) => {
                 ></img>
               </Box>
               <Box title="Item Name">
-                <Text style={{}}>{item.item.name}</Text>
+                <Text
+                  style={{
+                    fontWeight: "bolder",
+                    fontSize: "17px",
+                    lineHeight: 1.5,
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    height: "20px",
+
+                    maxWidth: "60px",
+                  }}
+                >
+                  {item.item.name}
+                </Text>
               </Box>
             </Stack>
           </>
@@ -452,7 +465,7 @@ export default function POSCartItem({
                 as={"h4"}
                 color={"default"}
               >
-                {cartTotal}
+            {defaultCurrencV}    {cartTotal}
               </Heading>
             }
           ></GTag>
