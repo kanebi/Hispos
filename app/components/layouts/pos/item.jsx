@@ -15,20 +15,19 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
   const [pined, setPined] = React.useState(product?.userPined);
   const [faved, setFaved] = React.useState(product?.userFav);
   const [carted, setCarted] = React.useState(false);
-  const [screenSize, setScreenSize] = React.useContext(ResponsiveContext)
-  const [screenHeight, setScreenHeight] = React.useState(undefined)
-  
-  React.useEffect(()=>{
-  
-  if (typeof document !== undefined){
-  
-  setScreenHeight(document.body.clientHeight)
-  }
-  
-  }, [])
+  const [screenSize, setScreenSize] = React.useContext(ResponsiveContext);
+  const [screenHeight, setScreenHeight] = React.useState(undefined);
+
+  React.useEffect(() => {
+    if (typeof document !== undefined) {
+      setScreenHeight(document.body.clientHeight);
+    }
+  }, []);
 
   const handleAddToCart = () => {
-    {alert(screenSize)}
+    {
+      alert(screenSize);
+    }
 
     setCarted(true);
     new Audio(tapSound).play();
@@ -46,17 +45,16 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
   const handleFavItem = () => {
     const prod = product;
     prod.userFav = !faved;
-    console.log(prod)
-    const newItems = itemsList.map(itm=> itm.id !== prod.id?itm: prod )
-    console.log(newItems)
-   
+    console.log(prod);
+    const newItems = itemsList.map((itm) => (itm.id !== prod.id ? itm : prod));
+    console.log(newItems);
 
     setItemsFunc([...newItems]);
     setFaved(!faved);
 
-    // update origin list 
+    // update origin list
   };
-  const cardBg = { dark: "#42433E", light: "#f1d7f7" }
+  const cardBg = { dark: "#42433E", light: "#f1d7f7" };
   return (
     <motion.div
       id={`item-${product.id}-card`}
@@ -124,9 +122,10 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
           // pad={"small"}
           width={"inherit"}
           style={{
-            cursor: "pointer",zIndex:100,
+            cursor: "pointer",
+            zIndex: 100,
             textAlign: "center",
-            position:"relative",
+            position: "relative",
             boxShadow:
               "rgb(204, 219, 232) 3px 3px 6px 0px inset, rgba(255, 255, 255, 0.5) -3px -3px 6px 1px inset",
           }}
@@ -140,7 +139,7 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
               margin: "5px",
               width: "auto",
               maxWidth: "inherit",
-              overflow:"hidden",
+              overflow: "hidden",
               height: "4vh",
               display: "block",
               opacity: "0.8",
@@ -148,51 +147,53 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
               // paddingBottom: "-10px",
             }}
           >
-            {screenSize ==="s"?
-             <Text
-             size="xxsmall"
-             style={{fontSize:screenSize ==="s"? "6px":"16px",         display:"inline-block",
-             height: "20px",
-             
-             padding:"0px",
-             float: "left",
-             paddingRight:"2px",
-             paddingLeft:"2px",
-             marginBottom:"5px",            
-
-           }}
-             color={
-               product.available_stock_quantity >= 1 ? "green" : "red"
-             }
-           ><small>
-             {product.available_stock_quantity} {product.stock_uom}</small>
-           </Text>:
-            <Tag
-              style={{
-                // maxWidth: "50px",
-                display:"inline-block",
-                height: "20px",
-                
-                padding:"0px",
-                float: "left",
-                paddingRight:"2px",
-                paddingLeft:"2px",
-                marginBottom:"5px",
-              }}
-            >
-                <Text
+            {screenSize === "s" ? (
+              <Text
                 size="xxsmall"
-                style={{fontSize:screenSize ==="s"? "6px":"16px",                   
+                style={{
+                  fontSize: screenSize === "s" ? "6px" : "16px",
+                  display: "inline-block",
+                  height: "20px",
 
-              }}
-                color={
-                  product.available_stock_quantity >= 1 ? "green" : "red"
-                }
-              ><small>
-                {product.available_stock_quantity} {product.stock_uom}</small>
+                  padding: "0px",
+                  float: "left",
+                  paddingRight: "2px",
+                  paddingLeft: "2px",
+                  marginBottom: "5px",
+                }}
+                color={product.available_stock_quantity >= 1 ? "green" : "red"}
+              >
+                <small>
+                  {product.available_stock_quantity} {product.stock_uom}
+                </small>
               </Text>
-            </Tag>
-}
+            ) : (
+              <Tag
+                style={{
+                  // maxWidth: "50px",
+                  display: "inline-block",
+                  height: "20px",
+
+                  padding: "0px",
+                  float: "left",
+                  paddingRight: "2px",
+                  paddingLeft: "2px",
+                  marginBottom: "5px",
+                }}
+              >
+                <Text
+                  size="xxsmall"
+                  style={{ fontSize: screenSize === "s" ? "6px" : "16px" }}
+                  color={
+                    product.available_stock_quantity >= 1 ? "green" : "red"
+                  }
+                >
+                  <small>
+                    {product.available_stock_quantity} {product.stock_uom}
+                  </small>
+                </Text>
+              </Tag>
+            )}
             <Tag
               style={{
                 backgroundColor: "inherit",
@@ -215,66 +216,85 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
               )}
             </Tag>
           </Box>
-
-          <Box  style={{height:"10.5vh",
-            backgroundImage: `url(${
-              product.image ? product.image : productIcon
-            })`,
-            backgroundSize: product.image ? "100%" : "45%",
-            zIndex:200,
-            backgroundPosition: "center",
-            backgroundPositionY: product.image ? "center" : "35%",
-            backgroundRepeat: "no-repeat",
-            objectFit: "cover",}}        onClick={handleAddToCart}
->
-
-            
-          </Box>
-          <Box style={{width:"inherit", height:"5vh", position:"relative"}}> 
-          <motion.div
-            initial={{
-              left:0,
-              right:0,
-              bottom: screenSize === "l" ?60:"",
-              // top: screenSize === "l" ?0:-30,
-              zIndex:250,
-              
-              boxShadow:
-                "rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgb(209, 213, 219) 0px 0px 0px 1px, inset rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
-                position:"absolute",
-                backgroundColor:"inherit",
-                width:"inherit",
-                height:"inherit",
-                
-                // overflow:"hidden"
+          <Box
+            style={{
+              height: "10.5vh",
+              backgroundImage: `url(${
+                product.image ? product.image : productIcon
+              })`,
+              backgroundSize: product.image ? "100%" : "45%",
+              zIndex: 200,
+              backgroundPosition: "center",
+              backgroundPositionY: product.image ? "center" : "35%",
+              backgroundRepeat: "no-repeat",
+              objectFit: "cover",
             }}
-            // animate={{bottom:-70}}
-            whileHover={{ top: screenSize ==="m"? -50: screenSize === "l"?-60:"",  height:screenSize==="m"?"50vh": "inherit",    }}
-            whileTap={{ top: screenSize ==="m"? -50: screenSize === "l"?-60:"",  height:screenSize==="m"?"50vh": "inherit",    }}
+            onClick={handleAddToCart}
+          ></Box>
+          <Box
+            style={{ width: "inherit", height: "5vh", position: "relative" }}
+          >
+            <motion.div
+              initial={{
+                left: 0,
+                right: 0,
+                bottom: screenSize === "l" ? 60 : "",
+                // top: screenSize === "l" ?0:-30,
+                zIndex: 250,
 
+                boxShadow:
+                  "rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgb(209, 213, 219) 0px 0px 0px 1px, inset rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
+                position: "absolute",
+                backgroundColor: "inherit",
+                width: "inherit",
+                height: "inherit",
+
+                // overflow:"hidden"
+              }}
+              // animate={{bottom:-70}}
+              whileHover={{
+                top: screenSize === "m" ? -50 : screenSize === "l" ? -60 : "",
+                height: screenSize === "m" ? "50vh" : "inherit",
+              }}
+              whileTap={{
+                top: screenSize === "m" ? -50 : screenSize === "l" ? -60 : "",
+                height: screenSize === "m" ? "50vh" : "inherit",
+              }}
             >
-            <Box
-              // background={{ dark: "#42433E", light: "#f1d7f7" }}
-              background={cardBg}
-              style={{ paddingBottom: "10px"  }}
-            >
-              <Box style={{ padding: "5px", marginBottom: "5px" , display:"block",maxWidth:"100%", }}>
-                <Text style={{ float: "left", width: screenSize === "s"?"100%":"50%" ,      
+              <Box
+                // background={{ dark: "#42433E", light: "#f1d7f7" }}
+                background={cardBg}
+                style={{ paddingBottom: "10px" }}
+              >
+                <Box
+                  style={{
+                    padding: "5px",
+                    marginBottom: "5px",
+                    display: "block",
+                    maxWidth: "100%",
+                  }}
+                >
+                  <Text
+                    style={{
+                      float: "left",
+                      width: screenSize === "s" ? "100%" : "50%",
                       lineHeight: 1,
                       textAlign: "left",
                       height: "15px",
-                      fontSize: screenSize ==="s"?"6px": "16px",
-                      display:"inline-block",                      textOverflow: "ellipsis",
+                      fontSize: screenSize === "s" ? "6px" : "16px",
+                      display: "inline-block",
+                      textOverflow: "ellipsis",
                       overflow: "hidden",
                     }}
                     title={product.name}
                   >
                     {product.name}
-                    </Text>
-      <Tag style={{
+                  </Text>
+                  <Tag
+                    style={{
                       float: "right",
                       lineHeight: 1,
-                      display: screenSize ==="s"?"none": "inline-block",
+                      display: screenSize === "s" ? "none" : "inline-block",
                       fontWeight: "bold",
                       textAlign: "left",
                       height: "18px",
@@ -286,68 +306,92 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
                   >
                     {product.price}
                   </Tag>
-             
+                </Box>
+                <motion.div
+                  initial={{ opacity: 0, height: "10vh" }}
+                  whileTap={{ opacity: 100 }}
+                  whileHover={{ opacity: 100 }}
+                >
+                  <Box
+                    round={"small"}
+                    style={{
+                      // marginLeft: screenHeight < 600 ? "4px" : "2px",
+                      display: "block",
+                      width: "100%",
+                      justifyContent: "center",
+                      justifyItems: "center",
+                    }}
+                  >
+                    <Box
+                      round={"xxsmall"}
+                      border={"all"}
+                      background={faved ? "box" : "widget"}
+                      style={{
+                        marginRight: "1px",
+                        width: "32%",
+                        display: "inline-block",
+                      }}
+                    >
+                      <RButton
+                        onClick={handleFavItem}
+                        active={faved ? true : false}
+                        style={{
+                          width: "100%",
+                          backgroundColor: "inherit",
+                        }}
+                        title="Favourite"
+                      >
+                        <Favorite />
+                      </RButton>
+                    </Box>
+                    <Box
+                      border={"all"}
+                      round={"xxsmall"}
+                      background={pined ? "box" : "widget"}
+                      style={{
+                        marginRight: "1px",
+                        width: "32%",
+                        display: "inline-block",
+                      }}
+                    >
+                      <RButton
+                        onClick={handlePinItem}
+                        active={pined ? true : false}
+                        style={{
+                          width: "100%",
+                          backgroundColor: "inherit",
+                        }}
+                        title="Pin to top"
+                      >
+                        <Pin></Pin>
+                      </RButton>
+                    </Box>
+                    <Box
+                      border={"all"}
+                      round={"xxsmall"}
+                      style={{ width: "32%", display: "inline-block" }}
+                    >
+                      <RButton
+                        style={{
+                          width: "100%",
+                          backgroundColor: "inherit",
+                        }}
+                        onClick={() =>
+                          window.open(`/inventory/edit/${product.id}`)
+                        }
+                        title="Edit"
+                      >
+                        <Edit />
+                      </RButton>
+                    </Box>
+                  </Box>
+                </motion.div>
               </Box>
-              <motion.div initial={{opacity:0,height:"10vh" }}    whileTap={{  opacity:100      }}         whileHover={{  opacity:100      }}
->
-              <Box round={"small"}
-                style={{
-                  
-                  // marginLeft: screenHeight < 600 ? "4px" : "2px",
-                  display:"block",
-                  width:"100%",
-                  justifyContent:"center", justifyItems:"center"
-                }}
-              >
-                     <Box round={"xxsmall"} border={"all"}  background={faved ? "box" : "widget"} style={{                marginRight:"1px",      width:"32%", display:"inline-block"
-
-}}> 
-                <RButton
-                  onClick={handleFavItem}
-                  active={faved ? true : false}
-                  style={{
-                    width:"inherit", backgroundColor:"inherit"
-                  }}
-                  title="Favourite"
-                >
-                  <Favorite />
-                </RButton>
-                </Box>
-                <Box border={"all"} round={"xxsmall"}  background={pined ? "box":"widget"} style={{     marginRight:"1px",                width:"32%", display:"inline-block"
-
-}}> 
-                <RButton
-                  onClick={handlePinItem}
-                  active={pined ? true : false}
-                  style={{
-                    width:"inherit",
-                    backgroundColor:"inherit"
-                  }}
-                  title="Pin to top"
-                >
-                  <Pin></Pin>
-                </RButton>
-                </Box>
-                <Box border={"all"}  round={"xxsmall"} style={{                   width:"32%", display:"inline-block"
-
-}}> 
-                <RButton
-                  style={{         
-                    width:"inherit", backgroundColor:"inherit"
-
-                  }}
-                  onClick={() => window.open(`/inventory/edit/${product.id}`)}
-                  title="Edit"
-                >
-                  <Edit />
-                </RButton>
-                </Box>
-              </Box></motion.div>
-            </Box>
-            <br />
-            <br />
-            <br />
-          </motion.div></Box>
+              <br />
+              <br />
+              <br />
+            </motion.div>
+          </Box>
         </Box>
       </Tooltip>
     </motion.div>

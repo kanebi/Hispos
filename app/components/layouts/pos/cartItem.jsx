@@ -31,21 +31,26 @@ import itemSeed from "../../seeds/itemSeed";
 import { FaMinusIcon, FaPlusIcon } from "smarthr-ui";
 import { toast } from "react-toastify";
 
-const CartItem = ({ item, updateCartItemFunc, gridViewV,onClickFunc }) => {
+const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc }) => {
   const [quantity, setQuantity] = React.useState(item.quantity);
   const [totalItemSum, setTotalItemSum] = React.useState(0);
   React.useEffect(() => {
     setTotalItemSum(
       +item.item.price_amount * item.quantity + item.quantity * +item.item.tax,
     );
-    item.quantity = quantity;
-    updateCartItemFunc(item);
-  }, [quantity]);
+    setQuantity(item.quantity)
+    
+  }, [item.quantity, item.price_amount]);
   const styleCenter = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     height: "60px",
+  };
+
+  const updateCarts = ({newQty}) => {
+    item.quantity = newQty;
+    updateCartItemFunc(item);
   };
   const handleReduceItem = () => {
     // handle if item can go below available stock
@@ -56,6 +61,7 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV,onClickFunc }) => {
         item.item.available_stock_quantity >= quantity - 1
       ) {
         setQuantity(quantity - 1);
+        return updateCarts({ newQty: quantity - 1 });
       } else {
         toast.info("Item stock not enough");
       }
@@ -77,7 +83,8 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV,onClickFunc }) => {
         +value >= item.item.min_order_qty &&
         +value <= item.item.available_stock_quantity
       ) {
-        return setQuantity(+value);
+        setQuantity(+value);
+        return updateCarts({newQty : +value});
       } else {
         toast.info(
           "Qty lower than minimum stock Qty or Qty more than available Stock Qty",
@@ -85,11 +92,13 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV,onClickFunc }) => {
       }
     } else {
       if (
-        quantity + 1 >= item.item.min_order_qty &&
-        quantity + 1 <= item.item.available_stock_quantity
+        +quantity + 1 >= item.item.min_order_qty &&
+        +quantity + 1 <= item.item.available_stock_quantity
       ) {
-        setQuantity(quantity + 1);
+        setQuantity( +quantity + 1);
+        return updateCarts({ newQty: +quantity + 1 });
       } else {
+
         toast.info(
           "Qty lower than minimum stock Qty or Qty more than available Stock Qty",
         );
@@ -143,12 +152,13 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV,onClickFunc }) => {
             height: "5px",
             overflow: "hidden",
             maxWidth: "inherit",
-            fontSize:"16px",
+            fontSize: "16px",
             maxHeight: "10px",
-            textOverflow:"ellipsis",
+            textOverflow: "ellipsis",
             overflow: "hidden",
           }}
-        >{item.item.price}
+        >
+          {item.item.price}
         </Text>
 
         <Box title="Item Name">
@@ -300,7 +310,7 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV,onClickFunc }) => {
                   overflow: "hidden",
                 }}
               >
-                {item.item.price_currency} {totalItemSum}
+                {item.item.price_currency} { +item.item.price_amount * item.quantity + item.quantity * +item.item.tax}
               </Text>
             </Box>
           </Stack>
@@ -310,7 +320,6 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV,onClickFunc }) => {
   );
 };
 
-
 export default function POSCartItem({
   cart,
   active,
@@ -318,7 +327,8 @@ export default function POSCartItem({
   handleUpdateCartFunc,
   gridView,
   setEdit,
-  setCurrentEdit
+  editOn,
+  setCurrentEdit,
 }) {
   const [held, setHeld] = React.useState(cart.onHold);
   const [cartTotal, setCartTotal] = React.useState(cart.totalPrice);
@@ -326,18 +336,10 @@ export default function POSCartItem({
 
   React.useEffect(() => {
     setHeld(cart.onHold);
-    var crtItmSum = 0;
-    // convert to default Currency
-    for (let i = 0; i < cart.items.length; i++) {
-      const crtItm = cart.items[i];
-      crtItmSum +=
-        +crtItm.item.price_amount * +crtItm.quantity +
-        +crtItm.quantity * +crtItm.item.tax;
-    }
-    setCartTotal(crtItmSum);
-    cart.items = cartItems;
-    handleUpdateCartFunc(cart);
-  }, [cart.onHold, cartItems]);
+    // cart.items = cartItems;
+    // handleUpdateCartFunc(cart);
+    setCartItems(cart.items);
+  }, [cart.onHold, cartItems, editOn]);
 
   const tertiaryLinks = [
     {
@@ -354,6 +356,7 @@ export default function POSCartItem({
     const newCartItems = cartItems.map((itm) =>
       itm.id !== item.id ? item : itm,
     );
+    
     setCartItems(newCartItems);
   };
 
@@ -363,9 +366,29 @@ export default function POSCartItem({
     handleUpdateCartFunc(cart);
     setHeld(!held);
   };
+  
+  const TotalSum =()=>{
+      // convert to default Currency
+
+
+  var val = 0
+  for (let i = 0; i < cart.items.length; i++) {
+    const crtItm = cart.items[i];
+    val +=
+      +crtItm.item.price_amount * +crtItm.quantity +
+      +crtItm.quantity * +crtItm.item.tax;
+  }
+  
+  return <>{val}</>
+  
+  
+  }
 
   return (
-    <motion.div initial={{ x: 50 }} animate={{ x: 0 }}>
+    <motion.div
+      initial={{ x: 50 }}
+      animate={{ x: 0, opacity: editOn ? 0.5 : 10 }}
+    >
       <Card
         round={"xxsmall"}
         margin={{ vertical: "xsmall" }}
@@ -389,9 +412,9 @@ export default function POSCartItem({
           {gridView ? (
             <List hover>
               <FlexboxGrid justify="start">
-                {cart.items.map((itm, index) => (
+                {cartItems.map((itm, index) => (
                   <FlexboxGrid.Item
-                    key={itm.name + "-cartitem"}
+                    key={itm.item.name + "-cartitem"}
                     style={{ marginRight: "5px" }}
                     colspan={6}
                   >
@@ -423,7 +446,7 @@ export default function POSCartItem({
             </List>
           ) : (
             <List hover>
-              {cart.items.map((itm, index) => (
+              {cartItems.map((itm, index) => (
                 <motion.div
                   initial={{
                     opacity: 0,
@@ -431,7 +454,7 @@ export default function POSCartItem({
                   animate={{
                     opacity: 1,
                   }}
-                  key={itm.name + "-cartitem"}
+                  key={itm.item.name + "-cartitem"}
                 >
                   <CartItem
                     onClickFunc={() => {
@@ -465,7 +488,7 @@ export default function POSCartItem({
                 as={"h4"}
                 color={"default"}
               >
-            {defaultCurrencV}    {cartTotal}
+                {defaultCurrencV} <TotalSum />
               </Heading>
             }
           ></GTag>

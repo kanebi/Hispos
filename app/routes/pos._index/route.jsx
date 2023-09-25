@@ -124,6 +124,7 @@ export default function PointOfSale(props) {
             productId: 5,
             name: "Pizza",
             price_amount: "1800",
+            valuation_rate:"1800",
             image: null,
             min_order_qty: 1,
             allow_negative_stock: true,
@@ -154,6 +155,7 @@ export default function PointOfSale(props) {
             price: "NGN22000",
             stock_uom: "Unit",
             min_order_qty: 1,
+            valuation_rate:"2000",
             tax: "8.2",
             allow_negative_stock: false,
             available_stock_quantity: 4,
@@ -185,6 +187,7 @@ export default function PointOfSale(props) {
             stock_uom: "Unit",
             available_stock_quantity: 6,
             min_order_qty: 2,
+            valuation_rate:"10000",
             barcode: "sdfjso1234jsf",
             userFav: false,
             tax: "9",
@@ -210,6 +213,7 @@ export default function PointOfSale(props) {
             allow_negative_stock: true,
             stock_uom: "Unit",
             available_stock_quantity: 3,
+            valuation_rate:"2000",
             barcode: "sdfjso5678jsf",
             userFav: false,
             tax: "2.22",
@@ -325,10 +329,11 @@ export default function PointOfSale(props) {
 
   const checkoutButtonStyle = {
     width: "100%",
-    position:"absolute",
-    left:0, right:0,
-    bottom:0,
-  height:"inherit",
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "inherit",
     padding: "30px",
     fontSize: "30px",
     backgroundColor: "inherit",
@@ -336,11 +341,21 @@ export default function PointOfSale(props) {
   };
 
   const handleCartEditSubmit = (val) => {
-    console.log(val)
-    const formData = new FormData(val)
-
-    const values = Object.fromEntries(formData)
-    console.log(values)
+  const itemOnEdit =currentItemOnEdit
+    itemOnEdit.quantity = val.quantity;
+    itemOnEdit.percDiscount = val.percDiscount;
+    itemOnEdit.item.price_amount = val.price_amount;
+    itemOnEdit.item.warehouse = val.warehouse;
+    itemOnEdit.item.stock_uom = val.stock_uom;
+    itemOnEdit.item.tax = val.tax;
+    // console.log(val);
+    // console.log(itemOnEdit);
+    const updatedCarts = cartItems.map((crt) =>
+      crt.id === itemOnEdit ? itemOnEdit : crt,
+    );
+    setCartItems((prev)=>[...updatedCarts]);
+    setItemEditOn(false);
+    setCurrentItemOnEdit(null);
   };
   const handleRemoveItemFromCart = () => {
     setItemEditOn(false);
@@ -354,19 +369,17 @@ export default function PointOfSale(props) {
       toast.info("Select a field to edit");
     }
     if (isNaN(val) && val !== "" && val !== ".") {
-      
-        switch (val) {
-          case "delete":
-            setEditTargetValue("");
-            handleKeyInput("");
-            break;
-          case "remove":
-            handleRemoveItemFromCart(currentItemOnEdit);
-            break;
-          default:
-            setEditTargetField(val);
-            break;
-        
+      switch (val) {
+        case "delete":
+          setEditTargetValue("");
+          handleKeyInput("");
+          break;
+        case "remove":
+          handleRemoveItemFromCart(currentItemOnEdit);
+          break;
+        default:
+          setEditTargetField(val);
+          break;
       }
     } else {
       setEditTargetValue(String(editTargetValue) + String(val));
@@ -420,9 +433,9 @@ export default function PointOfSale(props) {
         company={companyData}
         setNewSession={setNewSession}
       ></POSHeader>
-      <Grid style={{ width: "90%", height:"100vh" }}>
-        <Row style={{height:"10vh", overflow:"hidden"}}>
-          <Col  xs={24} lg={34} md={34} className="Pos-Header">
+      <Grid style={{ width: "90%", height: "100vh" }}>
+        <Row style={{ height: "10vh", overflow: "hidden" }}>
+          <Col xs={24} lg={34} md={34} className="Pos-Header">
             <Header
               pad={"xsmall"}
               round={{ size: "xsmall" }}
@@ -547,9 +560,15 @@ export default function PointOfSale(props) {
             </Header>
           </Col>
         </Row>
-        <Row gutter={10} style={{  marginBottom: "0px", height:"60vh", overflow:"hidden" }}>
-          <Col sm={24} lg={15} xl={15} md={15} style={{height:"inherit"}}>
-            <Container className="Pos-Items-container" style={{height:"inherit"}}>
+        <Row
+          gutter={10}
+          style={{ marginBottom: "0px", height: "60vh", overflow: "hidden" }}
+        >
+          <Col sm={24} lg={15} xl={15} md={15} style={{ height: "inherit" }}>
+            <Container
+              className="Pos-Items-container"
+              style={{ height: "inherit" }}
+            >
               <Box
                 // pad={"small"}
                 round={{ size: "xsmall" }}
@@ -563,7 +582,7 @@ export default function PointOfSale(props) {
                   paddingBottom: "10px",
                   scrollMargin: "0px !important",
                   scrollBehavior: "smooth",
-                  scrollbarColor: "inherit",
+                  scrollbarColor: "pink",
                   scrollbarGutter: "stable",
                   scrollbarWidth: "thin",
                   boxShadow: "rgba(159, 112, 212, 0.2) 0px 7px 29px 0px",
@@ -578,7 +597,7 @@ export default function PointOfSale(props) {
                         key={uid(product)}
                         style={{
                           display: "inline-block",
-                          // 2.5vw already in use 
+                          // 2.5vw already in use
                           width: "10vw",
 
                           height:
@@ -607,37 +626,40 @@ export default function PointOfSale(props) {
                   (product, index) =>
                     !product?.userPined && (
                       <div
-                      key={uid(product)}
-                      style={{
-                        display: "inline-block",
-                        // 2.5vw already in use 
-                        width: "10vw",
+                        key={uid(product)}
+                        style={{
+                          display: "inline-block",
+                          // 2.5vw already in use
+                          width: "10vw",
 
-                        height:
-                          screenHeight && screenHeight < 600
-                            ? "27vh"
-                            : "22vh",
-                        overflow: "hidden",
-                        borderRadius: "6px",
+                          height:
+                            screenHeight && screenHeight < 600
+                              ? "27vh"
+                              : "22vh",
+                          overflow: "hidden",
+                          borderRadius: "6px",
 
-                        margin: "0.4vw",
-                      }}
-                    >
-                      <ItemCard
-                        itemsList={items}
-                        setItemsFunc={setItems}
-                        product={product}
-                        favsO={favsOnly}
-                        originItemList={itemsList}
-                      />
-                    </div>
+                          margin: "0.4vw",
+                        }}
+                      >
+                        <ItemCard
+                          itemsList={items}
+                          setItemsFunc={setItems}
+                          product={product}
+                          favsO={favsOnly}
+                          originItemList={itemsList}
+                        />
+                      </div>
                     ),
                 )}
               </Box>
             </Container>
           </Col>{" "}
-          <Col sm={24} style={{height:"inherit"}}  lg={9} md={9} xl={9}>
-            <Container style={{height:"inherit"}} className="Pos-Order-container">
+          <Col sm={24} style={{ height: "inherit" }} lg={9} md={9} xl={9}>
+            <Container
+              style={{ height: "inherit" }}
+              className="Pos-Order-container"
+            >
               <Box
                 pad={"small"}
                 round={{ size: "xsmall" }}
@@ -648,7 +670,7 @@ export default function PointOfSale(props) {
                   overflow: "hidden",
                   overflowY: "auto",
                   scrollBehavior: "smooth",
-                  height:"inherit",
+                  height: "inherit",
                   scrollbarWidth: "thin",
                 }}
               >
@@ -672,6 +694,7 @@ export default function PointOfSale(props) {
                       gridView={cartGridView}
                       handleUpdateCartFunc={handleUpdateCart}
                       defaultCurrencV={defaultCurrency}
+                      editOn={itemEditOn}
                       active={cart.id === activeCart}
                     />
                   </div>
@@ -682,8 +705,8 @@ export default function PointOfSale(props) {
                       position: "absolute",
                       zIndex: 0,
                       top: 0,
-                
-                      bottom:0,
+
+                      bottom: 0,
 
                       // x: 300,
                       width: "100%",
@@ -697,12 +720,15 @@ export default function PointOfSale(props) {
                       right: itemEditOn ? 0 : "",
                       opacity: itemEditOn ? 1 : 0,
                     }}
-                    style={{ display: itemEditOn ? "block" : "none" , height:"inherit"}}
+                    style={{
+                      display: itemEditOn ? "block" : "none",
+                      height: "inherit",
+                    }}
                   >
                     <Box
                       pad={"small"}
                       round={{ size: "3px" }}
-                      style={{height:"inherit"}}
+                      style={{ height: "inherit" }}
                       background={"box"}
                     >
                       <Header>
@@ -711,7 +737,10 @@ export default function PointOfSale(props) {
                             pad={"xsmall"}
                             label="Cancel"
                             primary
-                            onClick={() => setItemEditOn(false)}
+                            onClick={() => {
+                              setItemEditOn(false);
+                              setCurrentItemOnEdit(null);
+                            }}
                           ></Button>
                         </Box>
                         <Box alignSelf="start" align="end" justify="start">
@@ -787,28 +816,40 @@ export default function PointOfSale(props) {
             </Container>
           </Col>
         </Row>
-        <Row gutter={10} style={{ height:"30vh", overflow:"hidden"}}>
-          <Col style={{ marginTop: "10px", height:"inherit"}}  sm={24} lg={15} xl={15} md={15}>
-            <Container style={{height:"inherit"}} className="Pos-customer-container">
+        <Row gutter={10} style={{ height: "30vh", overflow: "hidden" }}>
+          <Col
+            style={{ marginTop: "10px", height: "inherit" }}
+            sm={24}
+            lg={15}
+            xl={15}
+            md={15}
+          >
+            <Container
+              style={{ height: "inherit" }}
+              className="Pos-customer-container"
+            >
               <Box
                 pad={"small"}
                 round={{ size: "xsmall" }}
-                style={{height:"inherit"}}
+                style={{ height: "inherit" }}
                 background={"brand"}
               >
                 Customer Container
               </Box>
             </Container>
           </Col>{" "}
-          <Col sm={24} style={{height:"inherit"}} lg={9} xl={9} md={9}>
-            <Container style={{height:"inherit"}} className="Pos-checkout-container">
+          <Col sm={24} style={{ height: "inherit" }} lg={9} xl={9} md={9}>
+            <Container
+              style={{ height: "inherit" }}
+              className="Pos-checkout-container"
+            >
               <Box
                 pad={"small"}
                 round={{ size: "xsmall" }}
                 style={{
-                  height:"inherit",
+                  height: "inherit",
                   borderTopRightRadius: "0px",
-                  overflowX:"auto",
+                  overflowX: "auto",
                   borderTopLeftRadius: "0px",
                   boxShadow:
                     " rgba(135, 112, 133, 0.35) 0px -50px 36px -28px inset rgba(0, 0, 0, 0.06) 0px 2px 4px 0px inset",
@@ -816,7 +857,7 @@ export default function PointOfSale(props) {
               >
                 <Box
                   alignContent="center"
-                  style={{ padding: "5px", width: "100%",}}
+                  style={{ padding: "5px", width: "100%" }}
                   // background={{ dark: "#353036", light: "#e4c3eb" }}
                   justify="center"
                   align="center"
@@ -858,16 +899,16 @@ export default function PointOfSale(props) {
                     ></Button>
                   </Stack>
                 </Box>
-                <Divider style={{margin:"4px"}}  /> {/* Coupon Code  */}
+                <Divider style={{ margin: "4px" }} /> {/* Coupon Code  */}
                 <Box
                   // width={"70%"}
                   round={{ size: "xxsmall" }}
                   background="box"
                   margin={"small"}
-                  style={{ display: "block"}}
+                  style={{ display: "block" }}
                 >
                   <Box
-                    style={{ display: "inline-block" , height:"inherit"}}
+                    style={{ display: "inline-block", height: "inherit" }}
                     background={"box"}
                     width={"70%"}
                   >
@@ -877,7 +918,7 @@ export default function PointOfSale(props) {
                         background: "inherit",
                         padding: "10px",
                         height: "inherit",
-                        outline:"none",
+                        outline: "none",
                         border: "none",
                       }}
                       onChange={(e) => setOrderCoupon(e.target.value)}
@@ -886,7 +927,14 @@ export default function PointOfSale(props) {
                       name="coupon"
                     ></TextInput>
                   </Box>
-                  <Box width={"30%"} style={{ display: "inline-block", backgroundColor:"inherit", height:"inherit" }}>
+                  <Box
+                    width={"30%"}
+                    style={{
+                      display: "inline-block",
+                      backgroundColor: "inherit",
+                      height: "inherit",
+                    }}
+                  >
                     <RButton
                       onClick={handleApplyCoupon}
                       endIcon={<Coupon />}
@@ -905,11 +953,15 @@ export default function PointOfSale(props) {
                 <Box
                   background={{ dark: "#a695a3", light: "#FCD8C9" }}
                   pad={"none"}
-                  style={{ height: "10vh",bottom:0,position:"relative",     marginTop:"20px"  }}
+                  style={{
+                    height: "10vh",
+                    bottom: 0,
+                    position: "relative",
+                    marginTop: "20px",
+                  }}
                 >
                   <RButton
                     style={checkoutButtonStyle}
-
                     startIcon={<Cart color="inherit" />}
                   >
                     {" "}
@@ -925,6 +977,7 @@ export default function PointOfSale(props) {
                     // x: 300,
                     width: "100%",
                     direction: "rtl",
+
                     opacity: 0,
                     left: 0,
                     bottom: 0,
@@ -946,29 +999,14 @@ export default function PointOfSale(props) {
                     height={"100%"}
                     background={"box"}
                   >
-                    <Box
+                    <List
                       style={{
-                        paddding: "0px",
-                        margin: "0px",
-                        alignItems: "center",
-                        marginTop: "-10px",
-                        justifyItems: "center",
+                        scrollbarColor: "pink",
+                        scrollbarWidth: "thin",
+                        scrollBehavior: "smooth",
+                        height: "100%",
                       }}
                     >
-                      <Stack spacing={10} direction="row">
-                        <Text>
-                          Total Quantity: {currentItemOnEdit.quantity}
-                        </Text>
-                        <Text>
-                          Grand Total : {defaultCurrency}{" "}
-                          {+currentItemOnEdit.item.price_amount *
-                            +currentItemOnEdit.quantity +
-                            +currentItemOnEdit.quantity *
-                              +currentItemOnEdit.item.tax}
-                        </Text>
-                      </Stack>
-                    </Box>
-                    <List>
                       <List.Item
                         style={{
                           padding: "0px",
@@ -981,7 +1019,8 @@ export default function PointOfSale(props) {
                         <RButton
                           style={{
                             height: "6vh",
-                            width: "20%",
+                            width: "30%",
+
                             margin: "2.5px",
                             fontSize: "20px",
                             fontWeight: "bold",
@@ -1021,8 +1060,9 @@ export default function PointOfSale(props) {
                         <RButton
                           style={{
                             height: "6vh",
-                            width: "30%",
                             margin: "2.5px",
+                            width: "20%",
+
                             fontSize: "25px",
                             fontWeight: "bolder",
                           }}
@@ -1046,7 +1086,8 @@ export default function PointOfSale(props) {
                         <RButton
                           style={{
                             height: "6vh",
-                            width: "20%",
+
+                            width: "30%",
                             margin: "2.5px",
                             fontSize: "20px",
                             fontWeight: "bold",
@@ -1086,7 +1127,7 @@ export default function PointOfSale(props) {
                         <RButton
                           style={{
                             height: "6vh",
-                            width: "30%",
+                            width: "20%",
                             margin: "2.5px",
                             fontSize: "25px",
                             fontWeight: "bolder",
@@ -1110,7 +1151,7 @@ export default function PointOfSale(props) {
                         <RButton
                           style={{
                             height: "6vh",
-                            width: "20%",
+                            width: "30%",
                             margin: "2.5px",
                             fontSize: "20px",
                             fontWeight: "bold",
@@ -1150,7 +1191,7 @@ export default function PointOfSale(props) {
                         <RButton
                           style={{
                             height: "6vh",
-                            width: "30%",
+                            width: "20%",
                             margin: "2.5px",
                             fontSize: "25px",
                             fontWeight: "bolder",
@@ -1174,7 +1215,7 @@ export default function PointOfSale(props) {
                         <RButton
                           style={{
                             height: "6vh",
-                            width: "20%",
+                            width: "30%",
                             margin: "2.5px",
                             fontSize: "20px",
                             fontWeight: "bold",
@@ -1213,7 +1254,7 @@ export default function PointOfSale(props) {
                         <RButton
                           style={{
                             height: "6vh",
-                            width: "30%",
+                            width: "20%",
                             margin: "2.5px",
                             fontSize: "25px",
                             fontWeight: "bolder",
