@@ -139,16 +139,16 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV,onClickFunc }) => {
         </Box>
         <Text
           style={{
-            lineHeight: 1,
+            lineHeight: 1.5,
             height: "5px",
             overflow: "hidden",
-            maxWidth: "80px",
-
+            maxWidth: "inherit",
+            fontSize:"16px",
             maxHeight: "10px",
-            overflowY: "hidden",
+            textOverflow:"ellipsis",
+            overflow: "hidden",
           }}
-        >
-          <small>{item.item.price}</small>
+        >{item.item.price}
         </Text>
 
         <Box title="Item Name">

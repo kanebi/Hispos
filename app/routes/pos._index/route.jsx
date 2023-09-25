@@ -71,6 +71,7 @@ import POSCartItem from "../../components/layouts/pos/cartItem";
 import { CheckOutline, Coupon, Icon, Minus } from "@rsuite/icons";
 import EditCartItem from "../../components/layouts/pos/editCartItem";
 import { toast } from "react-toastify";
+import alert from "alert";
 // import { Search } from "@rsuite/icons";
 export function loader({ params }) {
   return params;
@@ -324,19 +325,22 @@ export default function PointOfSale(props) {
 
   const checkoutButtonStyle = {
     width: "100%",
-    top: "-20px",
-    margin: "20px",
-    height: "inherit",
-    alignSelf: "center",
-    justify: "center",
+    position:"absolute",
+    left:0, right:0,
+    bottom:0,
+  height:"inherit",
     padding: "30px",
     fontSize: "30px",
     backgroundColor: "inherit",
     boxShadow: "rgba(136, 165, 191, 0.48) 6px 2px 16px 0px",
   };
 
-  const handleCartEditSubmit = () => {
-    alert("heard");
+  const handleCartEditSubmit = (val) => {
+    console.log(val)
+    const formData = new FormData(val)
+
+    const values = Object.fromEntries(formData)
+    console.log(values)
   };
   const handleRemoveItemFromCart = () => {
     setItemEditOn(false);
@@ -416,12 +420,11 @@ export default function PointOfSale(props) {
         company={companyData}
         setNewSession={setNewSession}
       ></POSHeader>
-      <Grid style={{ width: "80%" }}>
-        <Row>
-          <Col xs={24} lg={34} md={34} className="Pos-Header">
+      <Grid style={{ width: "90%", height:"100vh" }}>
+        <Row style={{height:"10vh", overflow:"hidden"}}>
+          <Col  xs={24} lg={34} md={34} className="Pos-Header">
             <Header
               pad={"xsmall"}
-              height={"xxsmall"}
               round={{ size: "xsmall" }}
               style={{
                 boxShadow: "rgba(0, 0, 0, 0.1) 0px 4px 12px",
@@ -544,19 +547,18 @@ export default function PointOfSale(props) {
             </Header>
           </Col>
         </Row>
-        <Row gutter={10} style={{ margin: "10px", marginBottom: "0px" }}>
-          <Col sm={24} lg={15} xl={15} md={15}>
-            <Container className="Pos-Items-container">
+        <Row gutter={10} style={{  marginBottom: "0px", height:"60vh", overflow:"hidden" }}>
+          <Col sm={24} lg={15} xl={15} md={15} style={{height:"inherit"}}>
+            <Container className="Pos-Items-container" style={{height:"inherit"}}>
               <Box
                 // pad={"small"}
-                height={"medium"}
                 round={{ size: "xsmall" }}
                 style={{
                   display: "block!important",
                   overflow: "hidden",
                   overflowY: "scroll",
                   paddingRight: "0px!important",
-                  paddingLeft: screenSize === "medium" ? "15px" : "5px",
+                  // paddingLeft: screenSize === "medium" ? "15px" : "5px",
                   paddingTop: "10px",
                   paddingBottom: "10px",
                   scrollMargin: "0px !important",
@@ -576,7 +578,8 @@ export default function PointOfSale(props) {
                         key={uid(product)}
                         style={{
                           display: "inline-block",
-                          width: "10.9vw",
+                          // 2.5vw already in use 
+                          width: "10vw",
 
                           height:
                             screenHeight && screenHeight < 600
@@ -585,7 +588,7 @@ export default function PointOfSale(props) {
                           overflow: "hidden",
                           borderRadius: "6px",
 
-                          margin: "0.2em",
+                          margin: "0.4vw",
                         }}
                       >
                         <ItemCard
@@ -604,39 +607,39 @@ export default function PointOfSale(props) {
                   (product, index) =>
                     !product?.userPined && (
                       <div
-                        key={uid(product)}
-                        style={{
-                          display: "inline-block",
-                          width: "10.9vw",
+                      key={uid(product)}
+                      style={{
+                        display: "inline-block",
+                        // 2.5vw already in use 
+                        width: "10vw",
 
-                          height:
-                            screenHeight && screenHeight < 600
-                              ? "27vh"
-                              : "22vh",
-                          overflow: "hidden",
-                          borderRadius: "6px",
+                        height:
+                          screenHeight && screenHeight < 600
+                            ? "27vh"
+                            : "22vh",
+                        overflow: "hidden",
+                        borderRadius: "6px",
 
-                          margin: "0.2em",
-                        }}
-                      >
-                        <ItemCard
-                          setItemsFunc={setItems}
-                          itemsList={items}
-                          product={product}
-                          originItemList={itemsList}
-                          favsO={favsOnly}
-                        />
-                      </div>
+                        margin: "0.4vw",
+                      }}
+                    >
+                      <ItemCard
+                        itemsList={items}
+                        setItemsFunc={setItems}
+                        product={product}
+                        favsO={favsOnly}
+                        originItemList={itemsList}
+                      />
+                    </div>
                     ),
                 )}
               </Box>
             </Container>
           </Col>{" "}
-          <Col sm={24} lg={9} md={9} xl={9}>
-            <Container className="Pos-Order-container">
+          <Col sm={24} style={{height:"inherit"}}  lg={9} md={9} xl={9}>
+            <Container style={{height:"inherit"}} className="Pos-Order-container">
               <Box
                 pad={"small"}
-                height={"medium"}
                 round={{ size: "xsmall" }}
                 // background={"brand"}
                 style={{
@@ -645,6 +648,7 @@ export default function PointOfSale(props) {
                   overflow: "hidden",
                   overflowY: "auto",
                   scrollBehavior: "smooth",
+                  height:"inherit",
                   scrollbarWidth: "thin",
                 }}
               >
@@ -678,6 +682,9 @@ export default function PointOfSale(props) {
                       position: "absolute",
                       zIndex: 0,
                       top: 0,
+                
+                      bottom:0,
+
                       // x: 300,
                       width: "100%",
                       direction: "rtl",
@@ -690,12 +697,12 @@ export default function PointOfSale(props) {
                       right: itemEditOn ? 0 : "",
                       opacity: itemEditOn ? 1 : 0,
                     }}
-                    style={{ display: itemEditOn ? "block" : "none" }}
+                    style={{ display: itemEditOn ? "block" : "none" , height:"inherit"}}
                   >
                     <Box
                       pad={"small"}
                       round={{ size: "3px" }}
-                      height={"medium"}
+                      style={{height:"inherit"}}
                       background={"box"}
                     >
                       <Header>
@@ -780,27 +787,28 @@ export default function PointOfSale(props) {
             </Container>
           </Col>
         </Row>
-        <Row gutter={10}>
-          <Col style={{ marginTop: "10px" }} sm={24} lg={15} xl={15} md={15}>
-            <Container className="Pos-customer-container">
+        <Row gutter={10} style={{ height:"30vh", overflow:"hidden"}}>
+          <Col style={{ marginTop: "10px", height:"inherit"}}  sm={24} lg={15} xl={15} md={15}>
+            <Container style={{height:"inherit"}} className="Pos-customer-container">
               <Box
                 pad={"small"}
-                height={"small"}
                 round={{ size: "xsmall" }}
+                style={{height:"inherit"}}
                 background={"brand"}
               >
                 Customer Container
               </Box>
             </Container>
           </Col>{" "}
-          <Col sm={24} lg={9} xl={9} md={9}>
-            <Container className="Pos-checkout-container">
+          <Col sm={24} style={{height:"inherit"}} lg={9} xl={9} md={9}>
+            <Container style={{height:"inherit"}} className="Pos-checkout-container">
               <Box
                 pad={"small"}
-                height={"203px"}
                 round={{ size: "xsmall" }}
                 style={{
+                  height:"inherit",
                   borderTopRightRadius: "0px",
+                  overflowX:"auto",
                   borderTopLeftRadius: "0px",
                   boxShadow:
                     " rgba(135, 112, 133, 0.35) 0px -50px 36px -28px inset rgba(0, 0, 0, 0.06) 0px 2px 4px 0px inset",
@@ -808,7 +816,7 @@ export default function PointOfSale(props) {
               >
                 <Box
                   alignContent="center"
-                  style={{ padding: "5px", width: "100%" }}
+                  style={{ padding: "5px", width: "100%",}}
                   // background={{ dark: "#353036", light: "#e4c3eb" }}
                   justify="center"
                   align="center"
@@ -850,16 +858,16 @@ export default function PointOfSale(props) {
                     ></Button>
                   </Stack>
                 </Box>
-                <Divider style={{ margin: "5px" }} /> {/* Coupon Code  */}
+                <Divider style={{margin:"4px"}}  /> {/* Coupon Code  */}
                 <Box
-                  width={"70%"}
+                  // width={"70%"}
                   round={{ size: "xxsmall" }}
                   background="box"
                   margin={"small"}
-                  style={{ display: "block" }}
+                  style={{ display: "block"}}
                 >
                   <Box
-                    style={{ display: "inline-block" }}
+                    style={{ display: "inline-block" , height:"inherit"}}
                     background={"box"}
                     width={"70%"}
                   >
@@ -869,6 +877,7 @@ export default function PointOfSale(props) {
                         background: "inherit",
                         padding: "10px",
                         height: "inherit",
+                        outline:"none",
                         border: "none",
                       }}
                       onChange={(e) => setOrderCoupon(e.target.value)}
@@ -877,7 +886,7 @@ export default function PointOfSale(props) {
                       name="coupon"
                     ></TextInput>
                   </Box>
-                  <Box width={"30%"} style={{ display: "inline-block" }}>
+                  <Box width={"30%"} style={{ display: "inline-block", backgroundColor:"inherit", height:"inherit" }}>
                     <RButton
                       onClick={handleApplyCoupon}
                       endIcon={<Coupon />}
@@ -896,11 +905,12 @@ export default function PointOfSale(props) {
                 <Box
                   background={{ dark: "#a695a3", light: "#FCD8C9" }}
                   pad={"none"}
-                  style={{ height: "30px" }}
+                  style={{ height: "10vh",bottom:0,position:"relative",     marginTop:"20px"  }}
                 >
                   <RButton
                     style={checkoutButtonStyle}
-                    startIcon={<Cart color="darkgrey" />}
+
+                    startIcon={<Cart color="inherit" />}
                   >
                     {" "}
                     Checkout{" "}
@@ -970,7 +980,7 @@ export default function PointOfSale(props) {
                       >
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "20px",
@@ -984,7 +994,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "25px",
@@ -997,7 +1007,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "25px",
@@ -1010,7 +1020,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "30%",
                             margin: "2.5px",
                             fontSize: "25px",
@@ -1035,7 +1045,7 @@ export default function PointOfSale(props) {
                       >
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "20px",
@@ -1049,7 +1059,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "25px",
@@ -1062,7 +1072,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "25px",
@@ -1075,7 +1085,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "30%",
                             margin: "2.5px",
                             fontSize: "25px",
@@ -1099,7 +1109,7 @@ export default function PointOfSale(props) {
                       >
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "20px",
@@ -1113,7 +1123,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "25px",
@@ -1126,7 +1136,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "25px",
@@ -1139,7 +1149,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "30%",
                             margin: "2.5px",
                             fontSize: "25px",
@@ -1163,7 +1173,7 @@ export default function PointOfSale(props) {
                       >
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "20px",
@@ -1176,7 +1186,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "20px",
@@ -1189,7 +1199,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "20%",
                             margin: "2.5px",
                             fontSize: "25px",
@@ -1202,7 +1212,7 @@ export default function PointOfSale(props) {
                         </RButton>
                         <RButton
                           style={{
-                            height: "25%",
+                            height: "6vh",
                             width: "30%",
                             margin: "2.5px",
                             fontSize: "25px",
