@@ -1,5 +1,5 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { color, motion } from "framer-motion";
 import {
   Box,
   Card,
@@ -38,8 +38,7 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc }) => {
     setTotalItemSum(
       +item.item.price_amount * item.quantity + item.quantity * +item.item.tax,
     );
-    setQuantity(item.quantity)
-    
+    setQuantity(item.quantity);
   }, [item.quantity, item.price_amount]);
   const styleCenter = {
     display: "flex",
@@ -48,7 +47,7 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc }) => {
     height: "60px",
   };
 
-  const updateCarts = ({newQty}) => {
+  const updateCarts = ({ newQty }) => {
     item.quantity = newQty;
     updateCartItemFunc(item);
   };
@@ -84,7 +83,7 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc }) => {
         +value <= item.item.available_stock_quantity
       ) {
         setQuantity(+value);
-        return updateCarts({newQty : +value});
+        return updateCarts({ newQty: +value });
       } else {
         toast.info(
           "Qty lower than minimum stock Qty or Qty more than available Stock Qty",
@@ -95,10 +94,9 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc }) => {
         +quantity + 1 >= item.item.min_order_qty &&
         +quantity + 1 <= item.item.available_stock_quantity
       ) {
-        setQuantity( +quantity + 1);
+        setQuantity(+quantity + 1);
         return updateCarts({ newQty: +quantity + 1 });
       } else {
-
         toast.info(
           "Qty lower than minimum stock Qty or Qty more than available Stock Qty",
         );
@@ -146,21 +144,58 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc }) => {
             src={item.item.image ? item.item.image : productIcon}
           ></img>
         </Box>
-        <Text
-          style={{
-            lineHeight: 1.5,
-            height: "5px",
-            overflow: "hidden",
-            maxWidth: "inherit",
-            fontSize: "16px",
-            maxHeight: "10px",
-            textOverflow: "ellipsis",
-            overflow: "hidden",
-          }}
-        >
-          {item.item.price}
-        </Text>
+      
+        <Box
+              title="Item Tax"
+              style={{ marginTop: item.percDiscount > 0 ? "0px" : "15px" }}
+            >
+              <Text
+                style={{
+                  fontSize: "17px",
+                  lineHeight: 1.5,
+                  maxWidth: "100px",
+                  height: "20px",
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                }}
+                > 
+                {item.percDiscount <= 0 ? <>{item.item.price_currency} {( 
+                  +item.item.price_amount * item.quantity +
+                  item.quantity * +item.item.tax)}</>
+                 : (
+                  <small style={{ color: "grey" }}>
+                    <strike>{item.item.price_currency}
+                      {+item.item.price_amount * item.quantity +
+                        item.quantity * +item.item.tax}
+                    </strike>
+                  </small>
+                )}
+              </Text>
+            </Box>
 
+            <Box title="Item Tax" style={{ marginTop: "5px" }}>
+              <Text
+                style={{fontSize: "17px",
+                  lineHeight: 1.5,
+                  maxWidth: "100px",
+                  height: "20px",
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                }}
+              > 
+                {item.percDiscount > 0 ? (
+                  <>{item.item.price_currency}
+                    {+item.item.price_amount * +item.quantity +
+                      +(+item.quantity * +item.item.tax) -
+                      (+item.percDiscount / 100) *
+                        (+item.item.price_amount * +item.quantity +
+                          +(item.quantity * +item.item.tax))}
+                  </>
+                ) : (
+                  ""
+                )}
+              </Text>
+            </Box>
         <Box title="Item Name">
           <Input
             style={{
@@ -180,7 +215,10 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc }) => {
       </Stack>
     </Whisper>
   ) : (
-    <List.Item key={item.item.name} style={{ marginBottom: "10px" }}>
+    <List.Item
+      key={item.item.name}
+      style={{ marginBottom: "10px", position: "relative" }}
+    >
       <FlexboxGrid>
         <FlexboxGrid.Item colspan={6} style={{ ...styleCenter }}>
           <>
@@ -298,7 +336,10 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc }) => {
                 Total
               </Tag>
             </Box>
-            <Box title="Item Tax" style={{ marginTop: "15px" }}>
+            <Box
+              title="Item Tax"
+              style={{ marginTop: item.percDiscount > 0 ? "0px" : "15px" }}
+            >
               <Text
                 style={{
                   fontWeight: "bolder",
@@ -310,12 +351,49 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc }) => {
                   overflow: "hidden",
                 }}
               >
-                {item.item.price_currency} { +item.item.price_amount * item.quantity + item.quantity * +item.item.tax}
+                {item.percDiscount <= 0 ? (
+                  +item.item.price_amount * item.quantity +
+                  item.quantity * +item.item.tax
+                ) : (
+                  <small style={{ color: "grey" }}>
+                    <strike>
+                      {+item.item.price_amount * item.quantity +
+                        item.quantity * +item.item.tax}
+                    </strike>
+                  </small>
+                )}
+              </Text>
+            </Box>
+
+            <Box title="Item Tax" style={{ marginTop: "5px" }}>
+              <Text
+                style={{
+                  fontWeight: "bolder",
+                  fontSize: "17px",
+                  lineHeight: 1.5,
+                  maxWidth: "100px",
+                  height: "20px",
+                  textOverflow: "ellipsis",
+                  overflow: "hidden",
+                }}
+              >
+                {item.percDiscount > 0 ? (
+                  <>
+                    {+item.item.price_amount * +item.quantity +
+                      +(+item.quantity * +item.item.tax) -
+                      (+item.percDiscount / 100) *
+                        (+item.item.price_amount * +item.quantity +
+                          +(item.quantity * +item.item.tax))}
+                  </>
+                ) : (
+                  ""
+                )}
               </Text>
             </Box>
           </Stack>
         </FlexboxGrid.Item>
       </FlexboxGrid>
+     
     </List.Item>
   );
 };
@@ -356,7 +434,7 @@ export default function POSCartItem({
     const newCartItems = cartItems.map((itm) =>
       itm.id !== item.id ? item : itm,
     );
-    
+
     setCartItems(newCartItems);
   };
 
@@ -366,23 +444,20 @@ export default function POSCartItem({
     handleUpdateCartFunc(cart);
     setHeld(!held);
   };
-  
-  const TotalSum =()=>{
-      // convert to default Currency
 
+  const TotalSum = () => {
+    // convert to default Currency
 
-  var val = 0
-  for (let i = 0; i < cart.items.length; i++) {
-    const crtItm = cart.items[i];
-    val +=
-      +crtItm.item.price_amount * +crtItm.quantity +
-      +crtItm.quantity * +crtItm.item.tax;
-  }
-  
-  return <>{val}</>
-  
-  
-  }
+    var val = 0;
+    for (let i = 0; i < cart.items.length; i++) {
+      const crtItm = cart.items[i];
+      val +=
+        +crtItm.item.price_amount * +crtItm.quantity +
+        +crtItm.quantity * +crtItm.item.tax;
+    }
+
+    return <>{val}</>;
+  };
 
   return (
     <motion.div

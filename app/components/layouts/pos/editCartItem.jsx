@@ -266,7 +266,7 @@ const EditCartItem = React.forwardRef((props, ref) => {
     lineHeight: 1.5,
     height: "23px",
     overflow: "hidden",
-    width:"170px",
+    width: "170px",
     textOverflow: "ellipsis",
   };
 
@@ -420,7 +420,9 @@ const EditCartItem = React.forwardRef((props, ref) => {
               margin: 0,
             }}
           >
-            <Form.ControlLabel style={labelStyle}>Discount %</Form.ControlLabel>
+            <Form.ControlLabel style={labelStyle}>
+              Discount (%)
+            </Form.ControlLabel>
 
             <Form.Control
               title="Percentage Discount"
@@ -559,21 +561,29 @@ const EditCartItem = React.forwardRef((props, ref) => {
           </Text>
           <Divider vertical style={{ padding: "2px", margin: "3px" }} />
           <Text style={tabStyle}>
-            Total Tax <br /> {currentItemOnEditV.item.price_currency}{" "}
+            Tax Total <br /> {currentItemOnEditV.item.price_currency}{" "}
             {+quantity * +tax_rate}
           </Text>
           <Divider vertical style={{ padding: "2px", margin: "3px" }} />
 
-
           <Text style={tabStyle}>
             Sub-Total <br /> {currentItemOnEditV.item.price_currency}{" "}
             {+price_amount * +quantity}
-          </Text>       
+          </Text>
           <Divider vertical style={{ padding: "2px", margin: "3px" }} />
 
           <Text style={tabStyle}>
             Grand Total <br /> {currentItemOnEditV.item.price_currency}{" "}
-            {+price_amount * +quantity + +(quantity * +tax_rate)}
+            {+percDiscount > 0 ? (
+              <>
+                {+price_amount * +quantity +
+                  +(quantity * +tax_rate) -
+                  (percDiscount / 100) *
+                    (+price_amount * +quantity + +(quantity * +tax_rate))}
+              </>
+            ) : (
+              <>{+price_amount * +quantity + +(quantity * +tax_rate)}</>
+            )}
           </Text>
         </Stack>
       </Container>

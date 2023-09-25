@@ -165,6 +165,8 @@ export default function PointOfSale(props) {
           },
           quantity: 1,
           taxtTotal: "222",
+          percDiscount: 0,
+
           totalPrice: "NGN2200",
         },
       ],
@@ -710,7 +712,6 @@ export default function PointOfSale(props) {
 
                       // x: 300,
                       width: "100%",
-                      direction: "rtl",
                       opacity: 0,
 
                       overflow: "hidden",
@@ -731,8 +732,8 @@ export default function PointOfSale(props) {
                       style={{ height: "inherit" }}
                       background={"box"}
                     >
-                      <Header>
-                        <Box alignSelf="end" align="end" justify="end">
+                      <Header style={{direction:"rtl"}}>
+                        <Box  alignSelf="end" align="end" justify="end">
                           <Button
                             pad={"xsmall"}
                             label="Cancel"
