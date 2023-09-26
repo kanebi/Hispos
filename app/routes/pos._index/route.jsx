@@ -120,11 +120,12 @@ export default function PointOfSale(props) {
       onHold: false,
       items: [
         {
+          id: 22,
           item: {
-            productId: 5,
+            id: 5,
             name: "Pizza",
             price_amount: "1800",
-            valuation_rate:"1800",
+            valuation_rate: "1800",
             image: null,
             min_order_qty: 1,
             allow_negative_stock: true,
@@ -146,7 +147,7 @@ export default function PointOfSale(props) {
         },
         {
           item: {
-            productId: 8,
+            id: 8,
             name: "Fish Fillet",
             price_amount: "2200",
             image: null,
@@ -155,7 +156,7 @@ export default function PointOfSale(props) {
             price: "NGN22000",
             stock_uom: "Unit",
             min_order_qty: 1,
-            valuation_rate:"2000",
+            valuation_rate: "2000",
             tax: "8.2",
             allow_negative_stock: false,
             available_stock_quantity: 4,
@@ -163,6 +164,7 @@ export default function PointOfSale(props) {
             userFav: true,
             userPined: false,
           },
+          id: 23,
           quantity: 1,
           taxtTotal: "222",
           percDiscount: 0,
@@ -179,7 +181,7 @@ export default function PointOfSale(props) {
       items: [
         {
           item: {
-            productId: 11,
+            id: 11,
             name: "Tacos",
             price_amount: "1700",
             image: null,
@@ -189,7 +191,7 @@ export default function PointOfSale(props) {
             stock_uom: "Unit",
             available_stock_quantity: 6,
             min_order_qty: 2,
-            valuation_rate:"10000",
+            valuation_rate: "10000",
             barcode: "sdfjso1234jsf",
             userFav: false,
             tax: "9",
@@ -197,14 +199,18 @@ export default function PointOfSale(props) {
             userPined: true,
             warehouse: "olomoro",
           },
+          id: 28,
+
           quantity: 3,
           taxtTotal: "93",
           percDiscount: 0,
           totalPrice: "NGN5100",
         },
         {
+          id: 26,
+
           item: {
-            productId: 17,
+            id: 17,
             name: "Shrimp Scampi",
             price_amount: "2600",
             image: null,
@@ -215,7 +221,7 @@ export default function PointOfSale(props) {
             allow_negative_stock: true,
             stock_uom: "Unit",
             available_stock_quantity: 3,
-            valuation_rate:"2000",
+            valuation_rate: "2000",
             barcode: "sdfjso5678jsf",
             userFav: false,
             tax: "2.22",
@@ -234,7 +240,8 @@ export default function PointOfSale(props) {
     },
   ]);
   const [cartsHeld, setCartsHeld] = React.useState(false);
-  const [activeCart, setActiveCart] = React.useState(cartItems[0].id || null);
+  const [activeCart, setActiveCart] = React.useState(cartItems[0]?.id || null);
+  const [pseudoActivecart, setPseudoActiveCart] = React.useState(null)
   const [cartsTotal, setCartsTotal] = React.useState(0);
   const [sessionProfile, setSessionProfile] = React.useState({
     defaultCurrency: "NGN",
@@ -284,15 +291,24 @@ export default function PointOfSale(props) {
       // convert to default currency if necessary
       for (let i = 0; i < cart.items.length; i++) {
         const crtItm = cart.items[i];
-        crtItmSum +=
-          +crtItm.item.price_amount * +crtItm.quantity +
-          +crtItm.quantity * +crtItm.item.tax;
+        if (+crtItm.percDiscount > 0) {
+          crtItmSum +=
+            +crtItm.item.price_amount * +crtItm.quantity +
+            +(crtItm.quantity * +crtItm.item.tax) -
+            (crtItm.percDiscount / 100) *
+              (+crtItm.item.price_amount * +crtItm.quantity +
+                +(crtItm.quantity * +crtItm.item.tax));
+        } else {
+          crtItmSum +=
+            +crtItm.item.price_amount * +crtItm.quantity +
+            +crtItm.quantity * +crtItm.item.tax;
+        }
       }
       cartsTotalSum += crtItmSum;
     }
 
-    setCartsTotal(cartsTotalSum);
-  }, [items, cartItems]);
+    setCartsTotal(cartsTotalSum.toFixed(2));
+  }, [items, cartItems, activeCart]);
 
   const handleApplyCoupon = () => {};
 
@@ -343,7 +359,7 @@ export default function PointOfSale(props) {
   };
 
   const handleCartEditSubmit = (val) => {
-  const itemOnEdit =currentItemOnEdit
+    const itemOnEdit = currentItemOnEdit;
     itemOnEdit.quantity = val.quantity;
     itemOnEdit.percDiscount = val.percDiscount;
     itemOnEdit.item.price_amount = val.price_amount;
@@ -355,13 +371,29 @@ export default function PointOfSale(props) {
     const updatedCarts = cartItems.map((crt) =>
       crt.id === itemOnEdit ? itemOnEdit : crt,
     );
-    setCartItems((prev)=>[...updatedCarts]);
+    setCartItems((prev) => [...updatedCarts]);
     setItemEditOn(false);
     setCurrentItemOnEdit(null);
   };
-  const handleRemoveItemFromCart = () => {
+  const handleRemoveItemFromCart = ({ item, cart = null }) => {
+    var targetCart = {};
+    if (cart !== null ) {
+    targetCart = cart;
+    } else {
+      
+      
+      targetCart =  cartItems.find(crt => crt.id === pseudoActivecart);
+    }
+    const newItemList = targetCart.items.filter((itm) => itm.id != item.id);
+    targetCart.items = newItemList;
+    const newCartList = cartItems.map((crt) =>
+      crt.id === targetCart.id ? targetCart : crt,
+    );
+    setCartItems((prev)=>[...newCartList]);
+    
     setItemEditOn(false);
     setCurrentItemOnEdit(null);
+    return targetCart.items
   };
   const handleKeyInput = (val) => {
     if (
@@ -377,7 +409,7 @@ export default function PointOfSale(props) {
           handleKeyInput("");
           break;
         case "remove":
-          handleRemoveItemFromCart(currentItemOnEdit);
+          handleRemoveItemFromCart({item:currentItemOnEdit});
           break;
         default:
           setEditTargetField(val);
@@ -420,6 +452,12 @@ export default function PointOfSale(props) {
       }
     }
   };
+  
+  const deleteCart =({id})=>{
+  const newCarts = cartItems.filter(itm=> itm.id  != id)
+  
+  setCartItems((prev)=>[...newCarts])
+  }
   return (
     <Container
       // style={{
@@ -683,9 +721,10 @@ export default function PointOfSale(props) {
                 </Header>
                 {cartItems.map((cart, index) => (
                   <div
-                    onClick={() =>
-                      cart.onHold === false ? setActiveCart(cart.id) : ""
-                    }
+                    onClick={() => {
+                      cart.onHold === false ? setActiveCart(cart.id) : "";
+                      setPseudoActiveCart(cart.id);
+                    }}
                     style={{ cursor: "pointer" }}
                     key={index + "cart-" + index}
                   >
@@ -694,7 +733,9 @@ export default function PointOfSale(props) {
                       setCurrentEdit={setCurrentItemOnEdit}
                       cart={cart}
                       gridView={cartGridView}
+                      deleteCartItem={handleRemoveItemFromCart}
                       handleUpdateCartFunc={handleUpdateCart}
+                      handleDeleteCart={deleteCart}
                       defaultCurrencV={defaultCurrency}
                       editOn={itemEditOn}
                       active={cart.id === activeCart}
@@ -732,8 +773,8 @@ export default function PointOfSale(props) {
                       style={{ height: "inherit" }}
                       background={"box"}
                     >
-                      <Header style={{direction:"rtl"}}>
-                        <Box  alignSelf="end" align="end" justify="end">
+                      <Header style={{ direction: "rtl" }}>
+                        <Box alignSelf="end" align="end" justify="end">
                           <Button
                             pad={"xsmall"}
                             label="Cancel"
@@ -791,7 +832,7 @@ export default function PointOfSale(props) {
                       style={{ margin: "0px", marginRight: "5px" }}
                     />
                     <Heading as={"h3"} size="xxsmall" color={"default"}>
-                      Total
+                      Total :
                     </Heading>
                     <Divider
                       vertical

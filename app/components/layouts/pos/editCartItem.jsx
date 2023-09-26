@@ -269,7 +269,16 @@ const EditCartItem = React.forwardRef((props, ref) => {
     width: "170px",
     textOverflow: "ellipsis",
   };
-
+  
+  const subTotal = (+price_amount * +quantity + +(quantity * +tax_rate)).toFixed(2)
+  
+  const percDiff =(
+    (percDiscount / 100) *
+    (+price_amount * +quantity + +(quantity * +tax_rate)))
+    
+  const grandTotal =(+price_amount * +quantity +
+    +(quantity * +tax_rate) -
+    percDiff).toFixed(2);
   return (
     <Container
       style={{
@@ -562,7 +571,7 @@ const EditCartItem = React.forwardRef((props, ref) => {
           <Divider vertical style={{ padding: "2px", margin: "3px" }} />
           <Text style={tabStyle}>
             Tax Total <br /> {currentItemOnEditV.item.price_currency}{" "}
-            {+quantity * +tax_rate}
+            {(+quantity * +tax_rate).toFixed(2)}
           </Text>
           <Divider vertical style={{ padding: "2px", margin: "3px" }} />
 
@@ -574,16 +583,7 @@ const EditCartItem = React.forwardRef((props, ref) => {
 
           <Text style={tabStyle}>
             Grand Total <br /> {currentItemOnEditV.item.price_currency}{" "}
-            {+percDiscount > 0 ? (
-              <>
-                {+price_amount * +quantity +
-                  +(quantity * +tax_rate) -
-                  (percDiscount / 100) *
-                    (+price_amount * +quantity + +(quantity * +tax_rate))}
-              </>
-            ) : (
-              <>{+price_amount * +quantity + +(quantity * +tax_rate)}</>
-            )}
+            {+percDiscount > 0 ? <>{grandTotal}</> : <>{subTotal}</>}
           </Text>
         </Stack>
       </Container>
