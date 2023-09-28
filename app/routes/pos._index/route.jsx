@@ -26,7 +26,6 @@ import {
   Container,
   Grid,
   Loader,
-  Form,
   Row,
   Button as RButton,
   IconButton,
@@ -43,7 +42,13 @@ import {
 import "rsuite/dist/rsuite.min.css";
 import POSHeader from "../../components/layouts/pos/header";
 import CurrencyInput from "react-currency-input-field";
-import { FaBoxIcon, FaHandsIcon, StatusLabel, Tooltip } from "smarthr-ui";
+import {
+  FaBoxIcon,
+  FaHandsIcon,
+  FaTrashIcon,
+  StatusLabel,
+  Tooltip,
+} from "smarthr-ui";
 import DateTimePicker from "react-datetime-picker";
 import SelectCurrency from "@paylike/react-currency-select";
 import "react-datetime-picker/dist/DateTimePicker.css";
@@ -72,9 +77,27 @@ import { CheckOutline, Coupon, Icon, Minus } from "@rsuite/icons";
 import EditCartItem from "../../components/layouts/pos/editCartItem";
 import { toast } from "react-toastify";
 import alert from "alert";
+import { Form, useActionData, useSubmit } from "@remix-run/react";
+import { json } from "@remix-run/node";
 // import { Search } from "@rsuite/icons";
 export function loader({ params }) {
   return params;
+}
+
+export async function action({ request }) {
+  const formData = await request.formData();
+  const data = Object.fromEntries(formData);
+  if (data.coupon) {
+    // get Coupon from db
+    const coupon = {
+      code: data.coupon,
+      isValid: true,
+      percentage: 50,
+      createdBy: "kane",
+    };
+    return json({ coupon: coupon });
+  }
+  return json({});
 }
 
 export default function PointOfSale(props) {
@@ -241,8 +264,9 @@ export default function PointOfSale(props) {
   ]);
   const [cartsHeld, setCartsHeld] = React.useState(false);
   const [activeCart, setActiveCart] = React.useState(cartItems[0]?.id || null);
-  const [pseudoActivecart, setPseudoActiveCart] = React.useState(null)
+  const [pseudoActivecart, setPseudoActiveCart] = React.useState(null);
   const [cartsTotal, setCartsTotal] = React.useState(0);
+  const [cartsSubTotal, setCartsSubTotal] = React.useState(0);
   const [sessionProfile, setSessionProfile] = React.useState({
     defaultCurrency: "NGN",
     shop: "Ellen Store",
@@ -259,12 +283,14 @@ export default function PointOfSale(props) {
   const [cartGridView, setCartGridView] = React.useState(false);
   const [itemEditOn, setItemEditOn] = React.useState(false);
   const [currentItemOnEdit, setCurrentItemOnEdit] = React.useState(null);
-  const [orderCoupon, setOrderCoupon] = React.useState("");
+  const [orderCoupon, setOrderCoupon] = React.useState({});
   const cartOnEditRef = React.useRef(null);
 
   const [editTargetValue, setEditTargetValue] = React.useState("");
   const [editTargetField, setEditTargetField] = React.useState(null);
-
+  const [couponCode, setCouponCode] = React.useState(null);
+  const actionData = useActionData();
+  const submit = useSubmit()
   React.useEffect(() => {
     // update the itemsList or origin list
     const newItemsList = itemsList.map(
@@ -277,6 +303,8 @@ export default function PointOfSale(props) {
     }
 
     var cartsTotalSum = 0;
+    var cartsSubTotalSum = 0;
+
     const availableCarts = cartItems.filter((crt) => crt.onHold === false);
     for (let i = 0; i < availableCarts.length; i++) {
       const cart = availableCarts[i];
@@ -288,6 +316,7 @@ export default function PointOfSale(props) {
         }
       }
       var crtItmSum = 0;
+
       // convert to default currency if necessary
       for (let i = 0; i < cart.items.length; i++) {
         const crtItm = cart.items[i];
@@ -304,20 +333,39 @@ export default function PointOfSale(props) {
             +crtItm.quantity * +crtItm.item.tax;
         }
       }
-      cartsTotalSum += crtItmSum;
+      cartsSubTotalSum += crtItmSum;
+      cartsTotalSum += cartsSubTotalSum;
     }
-
+    if (orderCoupon.isValid === true) {
+      cartsTotalSum =
+        cartsSubTotal - (orderCoupon.percentage / 100) * cartsSubTotalSum;
+    }
+    setCartsSubTotal(cartsSubTotalSum.toFixed(2));
     setCartsTotal(cartsTotalSum.toFixed(2));
-  }, [items, cartItems, activeCart]);
+  }, [items, cartItems, activeCart, orderCoupon, actionData]);
 
-  const handleApplyCoupon = () => {};
+  React.useEffect(
+  ()=>{
+  const response  = actionData
+  if (response?.coupon) {
+    if (response.coupon.isValid === false) {
+      alert(response.coupon);
+      toast.error("Invalid Coupon");
+    } else {
+      alert("sup");
+      setOrderCoupon(response.coupon);
 
-  const handleMakeDiscount = () => {};
-
+      toast.success("Coupon Successfully Applied");
+    }
+  }
+  },
+  [actionData])
   const handleUpdateCart = (cart) => {
     const newCarts = cartItems.map((crt) => (crt.id !== cart.id ? crt : cart));
     setCartItems(() => [...newCarts]);
   };
+
+   
   const resetItems = () => {
     setItems(itemsList);
   };
@@ -377,23 +425,21 @@ export default function PointOfSale(props) {
   };
   const handleRemoveItemFromCart = ({ item, cart = null }) => {
     var targetCart = {};
-    if (cart !== null ) {
-    targetCart = cart;
+    if (cart !== null) {
+      targetCart = cart;
     } else {
-      
-      
-      targetCart =  cartItems.find(crt => crt.id === pseudoActivecart);
+      targetCart = cartItems.find((crt) => crt.id === pseudoActivecart);
     }
     const newItemList = targetCart.items.filter((itm) => itm.id != item.id);
     targetCart.items = newItemList;
     const newCartList = cartItems.map((crt) =>
       crt.id === targetCart.id ? targetCart : crt,
     );
-    setCartItems((prev)=>[...newCartList]);
-    
+    setCartItems((prev) => [...newCartList]);
+
     setItemEditOn(false);
     setCurrentItemOnEdit(null);
-    return targetCart.items
+    return targetCart.items;
   };
   const handleKeyInput = (val) => {
     if (
@@ -409,7 +455,7 @@ export default function PointOfSale(props) {
           handleKeyInput("");
           break;
         case "remove":
-          handleRemoveItemFromCart({item:currentItemOnEdit});
+          handleRemoveItemFromCart({ item: currentItemOnEdit });
           break;
         default:
           setEditTargetField(val);
@@ -452,12 +498,12 @@ export default function PointOfSale(props) {
       }
     }
   };
-  
-  const deleteCart =({id})=>{
-  const newCarts = cartItems.filter(itm=> itm.id  != id)
-  
-  setCartItems((prev)=>[...newCarts])
-  }
+
+  const deleteCart = ({ id }) => {
+    const newCarts = cartItems.filter((itm) => itm.id != id);
+
+    setCartItems((prev) => [...newCarts]);
+  };
   return (
     <Container
       // style={{
@@ -726,11 +772,12 @@ export default function PointOfSale(props) {
                       setPseudoActiveCart(cart.id);
                     }}
                     style={{ cursor: "pointer" }}
-                    key={index + "cart-" + index}
+                    key={uid(cart)}
                   >
                     <POSCartItem
                       setEdit={setItemEditOn}
                       setCurrentEdit={setCurrentItemOnEdit}
+                      currentOnEdit={currentItemOnEdit}
                       cart={cart}
                       gridView={cartGridView}
                       deleteCartItem={handleRemoveItemFromCart}
@@ -813,46 +860,104 @@ export default function PointOfSale(props) {
                     </Box>
                   </motion.div>
                 )}
-                <Box round={{ size: "20px" }} width={"xlarge"} pad={"small"}>
-                  <Stack
-                    direction="row"
-                    style={{
-                      alignContent: "center",
-                      width: "100%",
-                      alignItems: "center",
-                      alignSelf: "center",
-                      borderSpacing: "5px",
-                      boxShadow:
-                        "rgba(240, 46, 170, 0.4) 0px 5px, rgba(240, 46, 170, 0.3) 0px 10px, rgba(240, 46, 170, 0.2) 0px 15px, rgba(240, 46, 170, 0.1) 0px 20px, rgba(240, 46, 170, 0.05) 0px 25px",
-                    }}
-                  >
-                    {" "}
-                    <Divider
-                      vertical
-                      style={{ margin: "0px", marginRight: "5px" }}
-                    />
-                    <Heading as={"h3"} size="xxsmall" color={"default"}>
-                      Total :
-                    </Heading>
-                    <Divider
-                      vertical
-                      style={{
-                        margin: "0px",
-                        marginLeft: "5px",
-                        marginRight: "5px",
+                <Stack direction="column">
+                  {orderCoupon?.isValid && (
+                    <Box
+                      round={{ size: "xxsmall" }}
+                      pad={"small"}
+                      margin={"xxsmall"}
+                      background={"box"}
+                      siz
+                      style={{ width: "100%", position: "relative" }}
+                      border={{
+                        side: "all",
+                        style: "dashed",
+                        color: "default",
                       }}
-                    />
-                    <Heading
-                      as={"h3"}
-                      style={{ padding: "5px" }}
-                      size="xxsmall"
-                      color={"default"}
                     >
-                      {defaultCurrency} {cartsTotal}
-                    </Heading>
-                    <Divider vertical />
-                  </Stack>
-                </Box>
+                      <div>
+                        <IconButton
+                          icon={<span>&#10005;</span>}
+                          style={{
+                            top: 0,
+                            borderRadius: "40%",
+                            position: "absolute",
+                            width: "20px",
+                            fontSize: "13px",
+                            margin: "2px",
+                            height: "20px",
+                            right: 0,
+                          }}
+                          onClick={() => setOrderCoupon({})}
+                        ></IconButton>
+                      </div>
+                      <div>
+                        <Heading as={"h3"} color={"default"} size="xsmall">
+                          {orderCoupon?.percentage}% Coupon Applied
+                        </Heading>
+                        <Text>#{orderCoupon?.code}</Text>
+                      </div>
+                    </Box>
+                  )}
+                  <Divider style={{ margin: "2px" }} />
+                  <Box round={{ size: "20px" }} width={"xlarge"} pad={"small"}>
+                    <Stack
+                      direction="row"
+                      style={{
+                        alignContent: "center",
+                        width: "100%",
+                        alignItems: "center",
+                        alignSelf: "center",
+                        borderSpacing: "5px",
+                        boxShadow:
+                          "rgba(240, 46, 170, 0.4) 0px 5px, rgba(240, 46, 170, 0.3) 0px 10px, rgba(240, 46, 170, 0.2) 0px 15px, rgba(240, 46, 170, 0.1) 0px 20px, rgba(240, 46, 170, 0.05) 0px 25px",
+                      }}
+                    >
+                      {" "}
+                      <Divider
+                        vertical
+                        style={{ margin: "0px", marginRight: "5px" }}
+                      />
+                      <Heading
+                        as={"h4"}
+                        size="xxsmall"
+                        style={{ display: "block" }}
+                        color={"default"}
+                      >
+                        Sub-Total :
+                      </Heading>
+                      <br />
+                      <Heading
+                        as={"h4"}
+                        style={{ padding: "5px", display: "block" }}
+                        size="xxsmall"
+                        color={"default"}
+                      >
+                        {defaultCurrency} {cartsSubTotal}
+                      </Heading>
+                      <Divider
+                        vertical
+                        style={{
+                          margin: "0px",
+                          marginLeft: "5px",
+                          marginRight: "5px",
+                        }}
+                      />
+                      <Heading as={"h4"} size="xxsmall" color={"default"}>
+                        Total :
+                      </Heading>
+                      <Heading
+                        as={"h4"}
+                        style={{ padding: "5px" }}
+                        size="xxsmall"
+                        color={"default"}
+                      >
+                        {defaultCurrency} {cartsTotal}
+                      </Heading>
+                      <Divider vertical />
+                    </Stack>
+                  </Box>
+                </Stack>
                 <Divider />
               </Box>
             </Container>
@@ -949,48 +1054,48 @@ export default function PointOfSale(props) {
                   margin={"small"}
                   style={{ display: "block" }}
                 >
-                  <Box
-                    style={{ display: "inline-block", height: "inherit" }}
-                    background={"box"}
-                    width={"70%"}
-                  >
-                    <TextInput
-                      round={{ size: "xxsmall" }}
+                  <Form method="post" >
+                    <Box
+                      style={{ display: "inline-block", height: "inherit" }}
+                      background={"box"}
+                      width={"70%"}
+                    >
+                      <TextInput
+                        round={{ size: "xxsmall" }}
+                        style={{
+                          background: "inherit",
+                          padding: "10px",
+                          height: "inherit",
+                          outline: "none",
+                          border: "none",
+                        }}
+                        placeholder="Coupon code"
+                        name="coupon"
+                      ></TextInput>
+                    </Box>
+                    <Box
+                      width={"30%"}
                       style={{
-                        background: "inherit",
-                        padding: "10px",
+                        display: "inline-block",
+                        backgroundColor: "inherit",
                         height: "inherit",
-                        outline: "none",
-                        border: "none",
-                      }}
-                      onChange={(e) => setOrderCoupon(e.target.value)}
-                      placeholder="Coupon Code"
-                      value={orderCoupon}
-                      name="coupon"
-                    ></TextInput>
-                  </Box>
-                  <Box
-                    width={"30%"}
-                    style={{
-                      display: "inline-block",
-                      backgroundColor: "inherit",
-                      height: "inherit",
-                    }}
-                  >
-                    <RButton
-                      onClick={handleApplyCoupon}
-                      endIcon={<Coupon />}
-                      style={{
-                        width: "100%",
-                        height: "inherit",
-                        background: "inherit",
-
-                        padding: "10.5px",
                       }}
                     >
-                      Apply
-                    </RButton>
-                  </Box>
+                      <RButton
+                        endIcon={<Coupon />}
+                        type="submit"
+                        style={{
+                          width: "100%",
+                          height: "inherit",
+                          background: "inherit",
+
+                          padding: "10.5px",
+                        }}
+                      >
+                        Apply
+                      </RButton>
+                    </Box>
+                  </Form>
                 </Box>
                 <Box
                   background={{ dark: "#a695a3", light: "#FCD8C9" }}

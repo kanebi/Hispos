@@ -28,18 +28,20 @@ import {
 import { uid } from "react-uid";
 import productIcon from "../../../../public/default_images/bascket.png";
 import itemSeed from "../../seeds/itemSeed";
-import { FaMinusIcon, FaPlusIcon } from "smarthr-ui";
+import { FaArrowDownIcon, FaMinusIcon, FaPlusIcon } from "smarthr-ui";
 import { toast } from "react-toastify";
 
 const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc,deleteItem }) => {
   const [quantity, setQuantity] = React.useState(item.quantity);
   const [totalItemSum, setTotalItemSum] = React.useState(0);
+  
   React.useEffect(() => {
     setTotalItemSum(
       +item.item.price_amount * item.quantity + item.quantity * +item.item.tax,
     );
     setQuantity(item.quantity);
   }, [item.quantity, item.price_amount]);
+  
   const styleCenter = {
     display: "flex",
     justifyContent: "center",
@@ -159,7 +161,6 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc,deleteItem 
           style={{
             lineHeight: 1.5,
             // height: "5px",
-            overflow: "hidden",
             maxWidth: "inherit",
             fontSize: "16px",
             maxHeight: "10px",
@@ -400,21 +401,62 @@ const CartItem = ({ item, updateCartItemFunc, gridViewV, onClickFunc,deleteItem 
           </Stack>
         </FlexboxGrid.Item>
       </FlexboxGrid>
+      <div
+        style={{
+          position: "absolute",
+          bottom: "0",
+          zIndex:0,
+          left:"50%",
+          textAlign:"center",
+          margin:"10px",
+        }}
+      >
+        <FaArrowDownIcon
+          style={{ color: "inherit",opacity:"0.5", fontSize: "10px" }}
+        />
+      </div>
       <motion.div
         whileHover={{ paddingTop: 0 }}
+        whileFocus={{ paddingTop: 0 }}
         initial={{
           y: -20,
           width: "100%",
           textAlign: "center",
           position: "absolute",
-          paddingTop: 20,
+          paddingTop: 50,
         }}
       >
-        <motion.div style={{ width: "100%",  }}>
-          <RButton onClick={deleteItem} style={{width:"45%", padding:"10px", display:"inline-block",border:"none", backgroundColor:"inherit", fontWeight:"bold"}}>Delete</RButton>
-          <Divider style={{margin:"2px"}} vertical/>
-          <RButton onClick={onClickFunc} style={{width:"45%", padding:"10px", display:"inline-block",border:"none", backgroundColor:"inherit", fontWeight:"bold"}}>Edit</RButton>
-        </motion.div>
+        <Box background={"default"}>
+          <motion.div style={{ width: "100%" }}>
+            <RButton
+              onClick={deleteItem}
+              style={{
+                width: "45%",
+                padding: "10px",
+                display: "inline-block",
+                border: "none",
+                backgroundColor: "inherit",
+                fontWeight: "bold",
+              }}
+            >
+              Delete
+            </RButton>
+            <Divider style={{ margin: "2px" }} vertical />
+            <RButton
+              onClick={onClickFunc}
+              style={{
+                width: "45%",
+                padding: "10px",
+                display: "inline-block",
+                border: "none",
+                backgroundColor: "inherit",
+                fontWeight: "bold",
+              }}
+            >
+              Edit
+            </RButton>
+          </motion.div>
+        </Box>
       </motion.div>
     </List.Item>
   );
@@ -429,7 +471,7 @@ export default function POSCartItem({
   setEdit,
   editOn,
   setCurrentEdit,
-  handleDeleteCart,
+  handleDeleteCart,currentOnEdit,
   deleteCartItem,
 }) {
   const [held, setHeld] = React.useState(cart.onHold);
@@ -441,7 +483,7 @@ export default function POSCartItem({
     // cart.items = cartItems;
     // handleUpdateCartFunc(cart);
     setCartItems(cart.items);
-  }, [cart.onHold,  cartItems, editOn]);
+  }, [cart.onHold,   cartItems, editOn]);
 
   const tertiaryLinks = [
     {
@@ -459,7 +501,7 @@ export default function POSCartItem({
       itm.id !== item.id ? item : itm,
     );
 
-    setCartItems(newCartItems);
+    // setCartItems(newCartItems);
     handleUpdateCartFunc(item);
   };
 
@@ -525,7 +567,7 @@ export default function POSCartItem({
               <FlexboxGrid justify="start">
                 {cartItems.map((itm, index) => (
                   <FlexboxGrid.Item
-                    key={itm.item.name + "-cartitem"}
+                    key={uid(itm)}
                     style={{ marginRight: "5px" }}
                     colspan={6}
                   >
@@ -543,11 +585,12 @@ export default function POSCartItem({
                         <CartItem
                           onClickFunc={() => {
                             setEdit(true);
-                            setCurrentEdit(itm);
+                            if (currentOnEdit !== itm){
+                            setCurrentEdit(itm);}
                           }}
                           deleteItem={() =>
                             setCartItems((prev) => [
-                              ...deleteCartItem({ item: itm, cart:cart }),
+                              ...deleteCartItem({ item: itm, cart: cart }),
                             ])
                           }
                           updateCartItemFunc={updateCartItem}
@@ -570,15 +613,20 @@ export default function POSCartItem({
                   animate={{
                     opacity: 1,
                   }}
-                  key={itm.item.name + "-cartitem"}
+                  key={uid(itm)}
                 >
                   <CartItem
                     onClickFunc={() => {
                       setEdit(true);
-                      setCurrentEdit(itm);
+                      
+                            if (currentOnEdit !== itm) {
+                              setCurrentEdit(itm);
+                            }
                     }}
                     deleteItem={() =>
-                      setCartItems((prev) => [...deleteCartItem({ item: itm, cart:cart })])
+                      setCartItems((prev) => [
+                        ...deleteCartItem({ item: itm, cart: cart }),
+                      ])
                     }
                     updateCartItemFunc={updateCartItem}
                     gridViewV={gridView}
