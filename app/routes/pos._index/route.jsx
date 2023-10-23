@@ -38,6 +38,8 @@ import {
   Input,
   FlexboxGrid,
   List,
+  Message,
+  useToaster,
 } from "rsuite";
 import "rsuite/dist/rsuite.min.css";
 import POSHeader from "../../components/layouts/pos/header";
@@ -76,40 +78,211 @@ import POSCartItem from "../../components/layouts/pos/cartItem";
 import { CheckOutline, Coupon, Icon, Minus } from "@rsuite/icons";
 import EditCartItem from "../../components/layouts/pos/editCartItem";
 import { toast } from "react-toastify";
-import alert from "alert";
-import { Form, useActionData, useSubmit } from "@remix-run/react";
+import { Form, useActionData, useFetcher, useSubmit } from "@remix-run/react";
 import { json } from "@remix-run/node";
+import Customer from "../../components/layouts/pos/customer";
+import Payment from "../../components/layouts/pos/payment";
+import OrderComplete from "../../components/layouts/pos/orderComplete";
 // import { Search } from "@rsuite/icons";
-export function loader({ params }) {
+import mailer from "../../../utils/mail.js";
+import { replaceAll } from "../../../utils/str_utils";
+
+export function loader({ params, request }) {
+  const customer = new URL(request.url).searchParams.get("customer");
+  const payment = new URL(request.url).searchParams.get("paymentMethods");
+  console.log(customer);
+  if (customer) {
+    return json({
+      customer: {
+        id: 1,
+        name: customer,
+        email: "ejike@gmail.com",
+        phone: "0902333234",
+        address: "Woji estate",
+        createdBy: "Loadnje",
+      },
+      recentTransactions: [
+        {
+          invoice: "12234kssl",
+          amount: "12000",
+          currency: "NGN",
+          status: "credit",
+          date: "22th may 2023",
+          time: "12:30pm",
+        },
+        {
+          invoice: "5994KSODP",
+          amount: "3000",
+          currency: "NGN",
+          status: "paid",
+          date: "22th may 2023",
+          time: "12:30pm",
+        },
+        {
+          invoice: "JUSIDOK203",
+          amount: "2000",
+          currency: "NGN",
+          status: "paid",
+          date: "22th may 2023",
+          time: "12:30pm",
+        },
+      ],
+    });
+  }
+  console.log(payment);
+  if (payment === "all") {
+    return json({
+      paymentMethods: [
+        { name: "Zenth Bank", id: 22, createdBy: "kane", currency: "NGN" },
+        { name: "Access Bank", id: 22, createdBy: "kane", currency: "USD" },
+        { name: "UBA Bank", id: 22, createdBy: "kane", currency: "NGN" },
+        { name: "POS Monie Point", id: 22, createdBy: "kane", currency: "NGN" },
+        { name: "Royal POS", id: 22, createdBy: "kane", currency: "NGN" },
+        { name: "Access Bank POS", id: 22, createdBy: "kane", currency: "USD" },
+        {
+          name: "UBA Bank Current",
+          id: 22,
+          createdBy: "kane",
+          currency: "NGN",
+        },
+        { name: "OPay", id: 22, createdBy: "kane", currency: "NGN" },
+        { name: "FLutterwave ", id: 22, createdBy: "kane", currency: "USD" },
+      ],
+    });
+  }
   return params;
 }
 
 export async function action({ request }) {
   const formData = await request.formData();
   const data = Object.fromEntries(formData);
-  if (data.coupon) {
-    // get Coupon from db
-    const coupon = {
-      code: data.coupon,
-      isValid: true,
-      percentage: 50,
-      createdBy: "kane",
-    };
-    return json({ coupon: coupon });
+
+  var order = {};
+
+  if (data.payment) {
+    var payment = JSON.parse(data.payment);
+    // console.log(payment);
+    order = payment.orderCode;
+    orderNote = payment.orderNote;
+
+    var pyMethodsUsed = [];
+
+    for (const key in payment) {
+      if (
+        key !== "orderNote" &&
+        key !== "orderCode" &&
+        +replaceAll(",", "", payment[key]) > 0
+      ) {
+        pyMethodsUsed.push({
+          name: key,
+          amount: payment[key],
+          currency: "NGN",
+        });
+      }
+    }
+
+    return json({ payment: { status: "paid" }, methods: pyMethodsUsed });
   }
-  return json({});
+  if (data.order) {
+    order = JSON.parse(data.order);
+    console.log(order);
+    var cartItems = order.cartItems;
+    var cartsTotalSum = 0;
+    var cartsSubTotalSum = 0;
+
+    const availableCarts = cartItems.filter((crt) => crt.onHold === false);
+    for (let i = 0; i < availableCarts.length; i++) {
+      const cart = availableCarts[i];
+
+      var crtItmSum = 0;
+
+      // convert to default currency if necessary
+      for (let i = 0; i < cart.items.length; i++) {
+        const crtItm = cart.items[i];
+        if (+crtItm.percDiscount > 0) {
+          crtItmSum +=
+            +crtItm.item.price_amount * +crtItm.quantity +
+            +(crtItm.quantity * +crtItm.item.tax) -
+            (crtItm.percDiscount / 100) *
+              (+crtItm.item.price_amount * +crtItm.quantity +
+                +(crtItm.quantity * +crtItm.item.tax));
+        } else {
+          crtItmSum +=
+            +crtItm.item.price_amount * +crtItm.quantity +
+            +crtItm.quantity * +crtItm.item.tax;
+        }
+      }
+      cartsSubTotalSum += crtItmSum;
+      cartsTotalSum += cartsSubTotalSum;
+    }
+
+    if (order.coupon?.isValid === true) {
+      cartsTotalSum =
+        cartsSubTotalSum - (order.coupon.percentage / 100) * cartsSubTotalSum;
+    }
+    order.total = cartsTotalSum.toFixed(2);
+    order.subTotal = cartsSubTotalSum.toFixed(2);
+
+    // to be generated and saved to db
+    // unique code or id
+    order.code = "3iedfc9383";
+    // select profile default
+    order.currency = "NGN";
+    order.totalDiscount = "NGN 230000";
+    order.totalTax = "NGN2000";
+    // order.posProfile = {}
+    // order.posSession = {}
+  }
+
+  if (data.coupon) {
+    var coupon = null;
+    if (data.coupon === {}) {
+      coupon = {};
+    } else {
+      // get Coupon from db
+      coupon = {
+        code: data.coupon,
+        isValid: true,
+        percentage: 50,
+        createdBy: "kane",
+      };
+    }
+
+    order.coupon = coupon;
+  }
+  if (data.action === "remove-coupon") {
+    console.log("coupon removed");
+    order.coupon = null;
+  }
+  if (data.action === "mailReceipt") {
+    // get sales admin or company admin email instead of hispos
+    mailer.sendMail({
+      data: {
+        from: `${data.senderName}  <hispos.info@gmail.com>`, // sender address
+        to: data.email, // list of receivers
+        subject: `Order Invoice from ${data.company}`, // Subject line
+        text: "Receipt from a shop", // plain text body
+        html: "Receipt from a Shop", // html body
+      },
+    });
+    return json({ msg: "Email Sent", type: "success" });
+  }
+  return json({ order: order });
 }
 
 export default function PointOfSale(props) {
   const [loading, setloading] = React.useState(false);
+  const [sessionData, setSessionData] = React.useState({});
   const [companyData, setCompanyData] = React.useState({
     name: "HPR",
     shops: ["Ph shop", "alcon Shop", "gentle shop"],
     logo: "",
     url: "https://accountgig.com",
+    includeLogoOnInvoice: true,
+    logoWidth: 100,
+    logoHeight: 100,
   });
 
-  const [profileData, setProfileData] = React.useState({});
   const [loggedInUser, setLoggedInUser] = React.useState({
     username: "kanemanuel",
     isAdmin: true,
@@ -164,7 +337,7 @@ export default function PointOfSale(props) {
             warehouse: "obigbp",
           },
           quantity: 2,
-          taxtTotal: "333",
+          taxTotal: "333",
           percDiscount: 0,
           totalPrice: "NGN3600",
         },
@@ -189,7 +362,7 @@ export default function PointOfSale(props) {
           },
           id: 23,
           quantity: 1,
-          taxtTotal: "222",
+          taxTotal: "222",
           percDiscount: 0,
 
           totalPrice: "NGN2200",
@@ -225,7 +398,7 @@ export default function PointOfSale(props) {
           id: 28,
 
           quantity: 3,
-          taxtTotal: "93",
+          taxTotal: "93",
           percDiscount: 0,
           totalPrice: "NGN5100",
         },
@@ -251,7 +424,7 @@ export default function PointOfSale(props) {
             userPined: true,
             warehouse: "obidgo",
           },
-          taxtTotal: "4",
+          taxTotal: "4",
           quantity: 2,
           percDiscount: 0,
 
@@ -268,6 +441,8 @@ export default function PointOfSale(props) {
   const [cartsTotal, setCartsTotal] = React.useState(0);
   const [cartsSubTotal, setCartsSubTotal] = React.useState(0);
   const [sessionProfile, setSessionProfile] = React.useState({
+    name: "Elliana",
+    company: "HPR",
     defaultCurrency: "NGN",
     shop: "Ellen Store",
     salesAdmin: "Kanebi",
@@ -290,7 +465,184 @@ export default function PointOfSale(props) {
   const [editTargetField, setEditTargetField] = React.useState(null);
   const [couponCode, setCouponCode] = React.useState(null);
   const actionData = useActionData();
-  const submit = useSubmit()
+  const submit = useSubmit();
+  const fetcher = useFetcher();
+  const [previousCoupon, setPreviousCoupon] = React.useState(null);
+  const customerComRef = React.useRef(null);
+  const [customerInfo, setCustomerInfo] = React.useState({
+    id: null,
+    name: null,
+    image: "",
+    email: "",
+    phone: "",
+    address: "",
+    createdBy: "",
+  });
+  const [customers, setCustomers] = React.useState([
+    "Eugenia",
+    "Bryan",
+    "Linda",
+    "Nancy",
+    "Lloyd",
+    "Alice",
+    "Julia",
+    "Albert",
+  ]);
+  const [order, setOrder] = React.useState({
+    customer: {
+      id: 1,
+      name: "Bryan",
+      email: "ejike@gmail.com",
+      phone: "0902333234",
+      address: "Woji estate",
+      createdBy: "Loadnje",
+    },
+    cartItems: [
+      {
+        id: 1,
+        onHold: false,
+        items: [
+          {
+            id: 22,
+            item: {
+              id: 5,
+              name: "Pizza",
+              price_amount: "1800",
+              valuation_rate: "1800",
+              image: null,
+              min_order_qty: 1,
+              allow_negative_stock: true,
+              price_currency: "NGN",
+              description: "Delicious pizza with various toppings.",
+              price: "NGN18000",
+              stock_uom: "Unit",
+              tax: "22",
+              available_stock_quantity: 15,
+              barcode: "sdfjso7890jsf",
+              userFav: false,
+              userPined: true,
+              warehouse: "obigbp",
+            },
+            quantity: 2,
+            taxTotal: "333",
+            percDiscount: 0,
+            totalPrice: "NGN3600",
+          },
+          {
+            item: {
+              id: 8,
+              name: "Fish Fillet",
+              price_amount: "2200",
+              image: null,
+              price_currency: "NGN",
+              description: "Tender fish fillet.",
+              price: "NGN22000",
+              stock_uom: "Unit",
+              min_order_qty: 1,
+              valuation_rate: "2000",
+              tax: "8.2",
+              allow_negative_stock: false,
+              available_stock_quantity: 4,
+              barcode: "sdfjso4567jsf",
+              userFav: true,
+              userPined: false,
+            },
+            id: 23,
+            quantity: 1,
+            taxTotal: "222",
+            percDiscount: 0,
+
+            totalPrice: "NGN2200",
+          },
+        ],
+        totalPrice: "NGN2300",
+        totalPriceAmount: "2300",
+      },
+      {
+        id: 3,
+        onHold: false,
+        items: [
+          {
+            id: 22,
+            item: {
+              id: 5,
+              name: "Pizza",
+              price_amount: "1800",
+              valuation_rate: "1800",
+              image: null,
+              min_order_qty: 1,
+              allow_negative_stock: true,
+              price_currency: "NGN",
+              description: "Delicious pizza with various toppings.",
+              price: "NGN18000",
+              stock_uom: "Unit",
+              tax: "22",
+              available_stock_quantity: 15,
+              barcode: "sdfjso7890jsf",
+              userFav: false,
+              userPined: true,
+              warehouse: "obigbp",
+            },
+            quantity: 2,
+            taxTotal: "333",
+            percDiscount: 0,
+            totalPrice: "NGN3600",
+          },
+          {
+            item: {
+              id: 9,
+              name: "Pizza",
+              price_amount: "2200",
+              image: null,
+              price_currency: "NGN",
+              description: "Pizza .",
+              price: "NGN92000",
+              stock_uom: "Unit",
+              min_order_qty: 1,
+              valuation_rate: "8000",
+              tax: "8.2",
+              allow_negative_stock: false,
+              available_stock_quantity: 9,
+              barcode: "sdfjso4567jsf",
+              userFav: true,
+              userPined: false,
+            },
+            id: 23,
+            quantity: 6,
+            taxTotal: "222",
+            percDiscount: 10,
+
+            totalPrice: "NGN2200",
+          },
+        ],
+        totalPrice: "NGN2300",
+        totalPriceAmount: "2300",
+      },
+    ],
+    coupon: {},
+    total: "10000",
+    subTotal: "5000",
+    currency: "NGN",
+    status: "completed",
+
+    note: "",
+    code: "3iedfc9383",
+    posProfile: sessionProfile,
+    posSession: sessionData,
+  });
+  const [paymentActive, setPaymentActive] = React.useState(false);
+  const toaster = useToaster();
+
+  const [orderComplete, setOrderComplete] = React.useState(false);
+  const [orderPayment, setOrderPayment] = React.useState({
+    methods: [
+      { name: "Zenth Bank", amount: "300", currency: "NGN" },
+      { name: "Access Bank", amount: "20000", currency: "NGN" },
+      { name: "UBA Bank Current", amount: "1000", currency: "NGN" },
+    ],
+    status: "paid",
+  });
+
   React.useEffect(() => {
     // update the itemsList or origin list
     const newItemsList = itemsList.map(
@@ -336,36 +688,170 @@ export default function PointOfSale(props) {
       cartsSubTotalSum += crtItmSum;
       cartsTotalSum += cartsSubTotalSum;
     }
+
     if (orderCoupon.isValid === true) {
       cartsTotalSum =
         cartsSubTotal - (orderCoupon.percentage / 100) * cartsSubTotalSum;
     }
+
     setCartsSubTotal(cartsSubTotalSum.toFixed(2));
     setCartsTotal(cartsTotalSum.toFixed(2));
   }, [items, cartItems, activeCart, orderCoupon, actionData]);
 
-  React.useEffect(
-  ()=>{
-  const response  = actionData
-  if (response?.coupon) {
-    if (response.coupon.isValid === false) {
-      alert(response.coupon);
-      toast.error("Invalid Coupon");
-    } else {
-      alert("sup");
-      setOrderCoupon(response.coupon);
+  React.useEffect(() => {
+    const response = fetcher.data;
+    if (response?.payment) {
+      setOrderPayment(response);
+      toast.success("Order Successfully Completed", {
+        position: "bottom-right",
+      });
 
-      toast.success("Coupon Successfully Applied");
+      toaster.push(<Message type="success">Payment Completed</Message>);
+      return setOrderComplete(true);
     }
-  }
-  },
-  [actionData])
+    if (response?.order) {
+      setOrder(response.order);
+    }
+
+    if (response?.order.coupon) {
+      // if (previousCoupon !== response.order.coupon) {
+      if (response.order.coupon?.isValid === true) {
+        setOrderCoupon(response.order.coupon);
+        // toast.success("Coupon Successfully Applied");
+        return;
+      } else {
+        // toast.error("Invalid Coupon");
+        return;
+      }
+      // }
+    }
+  }, [fetcher.data]);
+
+  const handleStartNewOrder = () => {
+    setPaymentActive(false);
+    setOrderComplete(false);
+
+    setCartItems([]);
+    setOrder(null);
+    setOrderPayment(null);
+    setCustomerInfo(null);
+  };
+
+  const handlePayment = (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+    const entries = Object.fromEntries(formData);
+    const data = { payment: JSON.stringify(entries) };
+    fetcher.submit(data, { method: "POST" });
+  };
+  const handleCheckout = () => {
+    if (paymentActive) {
+      return setPaymentActive(false);
+    }
+    if (customerComRef.current.createNewActive()) {
+      return toaster.push(
+        <Message showIcon type="error">
+          Save or cancel new Customer creation
+        </Message>,
+      );
+    }
+    if (
+      customerInfo.id === null ||
+      customerInfo.id === "" ||
+      customerInfo.id === undefined
+    ) {
+      return toaster.push(
+        <Message showIcon type="error">
+          Select a customer{" "}
+        </Message>,
+      );
+    }
+    if (
+      cartItems.length <= 0 ||
+      cartItems.filter((itm) => itm.onHold === false && itm.items.length >= 1)
+        .length <= 0
+    ) {
+      return toaster.push(
+        <Message showIcon type="error">
+          Select items to checkout
+        </Message>,
+      );
+    }
+    // create order in server
+    fetcher.submit(
+      {
+        order: JSON.stringify({
+          customer: customerInfo,
+          cartItems:
+            checkoutType === "Active" && activeCart !== null
+              ? cartItems.filter((crt) => crt.id === activeCart)
+              : cartItems.filter((crt) => crt.onHold === false),
+          coupon: orderCoupon,
+          posProfile: sessionProfile,
+          posSession: sessionData,
+        }),
+      },
+      { method: "POST" },
+    );
+    setPaymentActive(true);
+  };
+  const handleSelectCustomerDetail = (val) => {
+    // get customer from server and set to customer info state
+
+    setCustomerInfo({
+      id: 1,
+      name: val,
+      email: "ejike@gmail.com",
+      phone: "0902333234",
+      address: "Woji estate",
+      createdBy: "Loadnje",
+    });
+
+    customerComRef.current.getCustomerTransactions(1);
+  };
+
+  const handleSubmitCustomerDetails = ({ edit = true, e }) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData);
+    if (edit == true) {
+      // edit record
+      var newCustomerInfo = customerInfo;
+      for (let key in customerInfo) {
+        newCustomerInfo[key] = data[key];
+      }
+      setCustomerInfo(newCustomerInfo);
+    } else {
+      // create one
+
+      setCustomers((prev) => [...prev, data.name]);
+      data.id = 2;
+      data.createdBy = "kane";
+      setCustomerInfo(data);
+    }
+
+    customerComRef.current.handleCustomerSaved({
+      msg: edit ? "Edit Applied" : "Customer Saved",
+    });
+  };
+
+  const handleApplyCoupon = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData);
+    fetcher.submit(data, { method: "POST" });
+  };
+  const handleRemoveCoupon = () => {
+    fetcher.submit({ coupon: {} }, { method: "POST" });
+    const response = fetcher.data;
+    setOrderCoupon({});
+  };
   const handleUpdateCart = (cart) => {
     const newCarts = cartItems.map((crt) => (crt.id !== cart.id ? crt : cart));
     setCartItems(() => [...newCarts]);
   };
 
-   
   const resetItems = () => {
     setItems(itemsList);
   };
@@ -402,7 +888,7 @@ export default function PointOfSale(props) {
     height: "inherit",
     padding: "30px",
     fontSize: "30px",
-    backgroundColor: "inherit",
+    backgroundColor: paymentActive ? "initial" : "inherit",
     boxShadow: "rgba(136, 165, 191, 0.48) 6px 2px 16px 0px",
   };
 
@@ -504,7 +990,7 @@ export default function PointOfSale(props) {
 
     setCartItems((prev) => [...newCarts]);
   };
-  return (
+  return !orderComplete ? (
     <Container
       // style={{
       //             backgroundColor: "#f8d1ff",
@@ -517,6 +1003,7 @@ export default function PointOfSale(props) {
     >
       <POSHeader
         company={companyData}
+        profile={sessionProfile}
         setNewSession={setNewSession}
       ></POSHeader>
       <Grid style={{ width: "90%", height: "100vh" }}>
@@ -578,7 +1065,11 @@ export default function PointOfSale(props) {
                 </Box>
               </Box>
               <Navbar style={{ backgroundColor: "inherit", padding: "10px" }}>
-                <Nav title="Put Transaction on Hold" pullRight>
+                <Nav
+                  hidden={paymentActive}
+                  title="Put Transaction on Hold"
+                  pullRight
+                >
                   <IconButton
                     style={{
                       marginLeft: "10px",
@@ -648,103 +1139,93 @@ export default function PointOfSale(props) {
         </Row>
         <Row
           gutter={10}
-          style={{ marginBottom: "0px", height: "60vh", overflow: "hidden" }}
+          style={{
+            marginBottom: "0px",
+            height: paymentActive ? "80vh" : "60vh",
+            overflow: "hidden",
+          }}
         >
           <Col sm={24} lg={15} xl={15} md={15} style={{ height: "inherit" }}>
             <Container
               className="Pos-Items-container"
               style={{ height: "inherit" }}
             >
-              <Box
-                // pad={"small"}
-                round={{ size: "xsmall" }}
-                style={{
-                  display: "block!important",
-                  overflow: "hidden",
-                  overflowY: "scroll",
-                  paddingRight: "0px!important",
-                  // paddingLeft: screenSize === "medium" ? "15px" : "5px",
-                  paddingTop: "10px",
-                  paddingBottom: "10px",
-                  scrollMargin: "0px !important",
-                  scrollBehavior: "smooth",
-                  scrollbarColor: "pink",
-                  scrollbarGutter: "stable",
-                  scrollbarWidth: "thin",
-                  boxShadow: "rgba(159, 112, 212, 0.2) 0px 7px 29px 0px",
-                }}
-              >
-                {/* Pinned items  */}
+              {paymentActive ? (
+                <Box
+                  round={{ size: "xsmall" }}
+                  style={{
+                    display: "block!important",
+                    overflow: "hidden",
+                    height: "inherit",
+                    boxShadow: "rgba(159, 112, 212, 0.2) 0px 7px 29px 0px",
+                  }}
+                >
+                  <Payment
+                    orderV={order}
+                    handleSubmitPayment={handlePayment}
+                    profile={sessionProfile}
+                    setOrderFunc={setOrder}
+                  />
+                </Box>
+              ) : (
+                <Box
+                  // pad={"small"}
+                  round={{ size: "xsmall" }}
+                  style={{
+                    display: "block",
+                    overflow: "hidden",
+                    overflowY: "scroll",
+                    paddingRight: "0px",
+                    // paddingLeft: screenSize === "medium" ? "15px" : "5px",
+                    paddingTop: "10px",
+                    paddingBottom: "10px",
+                    scrollMargin: "0px ",
+                    scrollBehavior: "smooth",
+                    scrollbarColor: "pink",
+                    scrollbarGutter: "stable",
+                    scrollbarWidth: "thin",
+                    boxShadow: "rgba(159, 112, 212, 0.2) 0px 7px 29px 0px",
+                  }}
+                >
+                  {/* Pinned items  */}
 
-                {items.map(
-                  (product, index) =>
-                    product?.userPined && (
-                      <div
-                        key={uid(product)}
-                        style={{
-                          display: "inline-block",
-                          // 2.5vw already in use
-                          width: "10vw",
+                  {items.map(
+                    (product, index) =>
+                      product?.userPined && (
+                   
+                          <ItemCard
+                            itemsList={items}
+                            setItemsFunc={setItems}
+                            product={product}
+                            favsO={favsOnly}
+                            originItemList={itemsList}
+                          />
+                      ),
+                  )}
 
-                          height:
-                            screenHeight && screenHeight < 600
-                              ? "27vh"
-                              : "22vh",
-                          overflow: "hidden",
-                          borderRadius: "6px",
+                  {/* unpined items */}
 
-                          margin: "0.4vw",
-                        }}
-                      >
+                  {items.map(
+                    (product, index) =>
+                      !product?.userPined && (
                         <ItemCard
+                          key={uid(product)}
                           itemsList={items}
                           setItemsFunc={setItems}
                           product={product}
                           favsO={favsOnly}
                           originItemList={itemsList}
                         />
-                      </div>
-                    ),
-                )}
-
-                {/* unpined items */}
-                {items.map(
-                  (product, index) =>
-                    !product?.userPined && (
-                      <div
-                        key={uid(product)}
-                        style={{
-                          display: "inline-block",
-                          // 2.5vw already in use
-                          width: "10vw",
-
-                          height:
-                            screenHeight && screenHeight < 600
-                              ? "27vh"
-                              : "22vh",
-                          overflow: "hidden",
-                          borderRadius: "6px",
-
-                          margin: "0.4vw",
-                        }}
-                      >
-                        <ItemCard
-                          itemsList={items}
-                          setItemsFunc={setItems}
-                          product={product}
-                          favsO={favsOnly}
-                          originItemList={itemsList}
-                        />
-                      </div>
-                    ),
-                )}
-              </Box>
+                      ),
+                  )}
+                </Box>
+              )}
             </Container>
           </Col>{" "}
           <Col sm={24} style={{ height: "inherit" }} lg={9} md={9} xl={9}>
             <Container
               style={{ height: "inherit" }}
-              className="Pos-Order-container"
+              className="Pos-Carts-container"
             >
               <Box
                 pad={"small"}
@@ -771,11 +1252,15 @@ export default function PointOfSale(props) {
                       cart.onHold === false ? setActiveCart(cart.id) : "";
                       setPseudoActiveCart(cart.id);
                     }}
-                    style={{ cursor: "pointer" }}
+                    style={{
+                      cursor: "pointer",
+                      display: paymentActive && cart.onHold ? "none" : "block",
+                    }}
                     key={uid(cart)}
                   >
                     <POSCartItem
                       setEdit={setItemEditOn}
+                      paymentIsActive={paymentActive}
                       setCurrentEdit={setCurrentItemOnEdit}
                       currentOnEdit={currentItemOnEdit}
                       cart={cart}
@@ -860,47 +1345,49 @@ export default function PointOfSale(props) {
                     </Box>
                   </motion.div>
                 )}
-                <Stack direction="column">
-                  {orderCoupon?.isValid && (
-                    <Box
-                      round={{ size: "xxsmall" }}
-                      pad={"small"}
-                      margin={"xxsmall"}
-                      background={"box"}
-                      siz
-                      style={{ width: "100%", position: "relative" }}
-                      border={{
-                        side: "all",
-                        style: "dashed",
-                        color: "default",
-                      }}
-                    >
-                      <div>
-                        <IconButton
-                          icon={<span>&#10005;</span>}
-                          style={{
-                            top: 0,
-                            borderRadius: "40%",
-                            position: "absolute",
-                            width: "20px",
-                            fontSize: "13px",
-                            margin: "2px",
-                            height: "20px",
-                            right: 0,
-                          }}
-                          onClick={() => setOrderCoupon({})}
-                        ></IconButton>
-                      </div>
-                      <div>
-                        <Heading as={"h3"} color={"default"} size="xsmall">
-                          {orderCoupon?.percentage}% Coupon Applied
-                        </Heading>
-                        <Text>#{orderCoupon?.code}</Text>
-                      </div>
-                    </Box>
-                  )}
-                  <Divider style={{ margin: "2px" }} />
-                  <Box round={{ size: "20px" }} width={"xlarge"} pad={"small"}>
+
+                {cartItems.length >= 1 && (
+                  <Stack direction="column">
+                    {orderCoupon?.isValid && (
+                      <Box
+                        round={{ size: "xxsmall" }}
+                        pad={"small"}
+                        margin={"xxsmall"}
+                        background={"box"}
+                        siz
+                        style={{ width: "100%", position: "relative" }}
+                        border={{
+                          side: "all",
+                          style: "dashed",
+                          color: "default",
+                        }}
+                      >
+                        <div>
+                          <IconButton
+                            icon={<span>&#10005;</span>}
+                            style={{
+                              top: 0,
+                              borderRadius: "40%",
+                              position: "absolute",
+                              width: "20px",
+                              fontSize: "13px",
+                              margin: "2px",
+                              height: "20px",
+                              right: 0,
+                            }}
+                            onClick={handleRemoveCoupon}
+                          ></IconButton>
+                        </div>
+                        <div>
+                          <Heading as={"h3"} color={"default"} size="xsmall">
+                            {orderCoupon?.percentage}% Coupon Applied
+                          </Heading>
+                          <Text>#{orderCoupon?.code}</Text>
+                        </div>
+                      </Box>
+                    )}
+                    <Divider style={{ margin: "2px", padding: "1px" }} />
+                    {/* <Box round={{ size: "20px" }} width={"xlarge"} pad={"small"}> */}
                     <Stack
                       direction="row"
                       style={{
@@ -956,14 +1443,21 @@ export default function PointOfSale(props) {
                       </Heading>
                       <Divider vertical />
                     </Stack>
-                  </Box>
-                </Stack>
+                    {/* </Box> */}
+                  </Stack>
+                )}
                 <Divider />
               </Box>
             </Container>
           </Col>
         </Row>
-        <Row gutter={10} style={{ height: "30vh", overflow: "hidden" }}>
+        <Row
+          gutter={10}
+          style={{
+            height: paymentActive ? "10vh" : "30vh",
+            overflow: "hidden",
+          }}
+        >
           <Col
             style={{ marginTop: "10px", height: "inherit" }}
             sm={24}
@@ -978,10 +1472,27 @@ export default function PointOfSale(props) {
               <Box
                 pad={"small"}
                 round={{ size: "xsmall" }}
-                style={{ height: "inherit" }}
-                background={"brand"}
+                style={{
+                  height: "inherit",
+                  overflowY: "auto",
+                  msOverflowStyle: "-ms-autohiding-scrollbar",
+                  scrollbarColor: "inherit",
+                  scrollbarWidth: "thin",
+                  scrollbarGutter: "unset",
+                  scrollBehavior: "smooth",
+                  overflowAnchor: "revert",
+                  overflowClipBox: "content-box",
+                }}
+                background={{ dark: "#323033", light: "#f5d0f1" }}
               >
-                Customer Container
+                <Customer
+                  details={customerInfo}
+                  ref={customerComRef}
+                  customerList={customers}
+                  paymentIsActive={paymentActive}
+                  handleSelectCustomer={handleSelectCustomerDetail}
+                  handleSubmitCustomer={handleSubmitCustomerDetails}
+                />
               </Box>
             </Container>
           </Col>{" "}
@@ -1002,117 +1513,129 @@ export default function PointOfSale(props) {
                     " rgba(135, 112, 133, 0.35) 0px -50px 36px -28px inset rgba(0, 0, 0, 0.06) 0px 2px 4px 0px inset",
                 }}
               >
-                <Box
-                  alignContent="center"
-                  style={{ padding: "5px", width: "100%" }}
-                  // background={{ dark: "#353036", light: "#e4c3eb" }}
-                  justify="center"
-                  align="center"
-                >
-                  <Stack direction="row">
-                    <Button
-                      label={"All Carts"}
-                      primary
-                      onClick={() => setCheckoutType("All")}
-                      style={{
-                        backgroundColor: checkoutType !== "All" && "inherit",
-                      }}
-                    ></Button>
-
-                    <Minus color="#e9adff" />
-                    <Button
-                      label={"Active Cart"}
-                      // background={{ dark: "#a695a3", light: "#FCD8C9" }}
-
-                      onClick={() => {
-                        setCheckoutType("Active");
-                        cartItems.filter(
-                          (crt) =>
-                            crt.onHold === false && crt.id !== activeCart,
-                        ).length >= 1
-                          ? setActiveCart(
-                              cartItems.filter(
-                                (crt) =>
-                                  crt.onHold === false && crt.id !== activeCart,
-                              )[0].id,
-                            )
-                          : "";
-                      }}
-                      primary
-                      style={{
-                        opacity: activeCart === null ? "0.5" : 1,
-                        backgroundColor: checkoutType !== "Active" && "inherit",
-                      }}
-                    ></Button>
-                  </Stack>
-                </Box>
-                <Divider style={{ margin: "4px" }} /> {/* Coupon Code  */}
-                <Box
-                  // width={"70%"}
-                  round={{ size: "xxsmall" }}
-                  background="box"
-                  margin={"small"}
-                  style={{ display: "block" }}
-                >
-                  <Form method="post" >
+                {!paymentActive && (
+                  <>
                     <Box
-                      style={{ display: "inline-block", height: "inherit" }}
-                      background={"box"}
-                      width={"70%"}
+                      alignContent="center"
+                      style={{ padding: "5px", width: "100%" }}
+                      // background={{ dark: "#353036", light: "#e4c3eb" }}
+                      justify="center"
+                      align="center"
                     >
-                      <TextInput
-                        round={{ size: "xxsmall" }}
-                        style={{
-                          background: "inherit",
-                          padding: "10px",
-                          height: "inherit",
-                          outline: "none",
-                          border: "none",
-                        }}
-                        placeholder="Coupon code"
-                        name="coupon"
-                      ></TextInput>
-                    </Box>
-                    <Box
-                      width={"30%"}
-                      style={{
-                        display: "inline-block",
-                        backgroundColor: "inherit",
-                        height: "inherit",
-                      }}
-                    >
-                      <RButton
-                        endIcon={<Coupon />}
-                        type="submit"
-                        style={{
-                          width: "100%",
-                          height: "inherit",
-                          background: "inherit",
+                      <Stack direction="row">
+                        <Button
+                          label={"All Carts"}
+                          primary
+                          onClick={() => setCheckoutType("All")}
+                          style={{
+                            backgroundColor:
+                              checkoutType !== "All" && "inherit",
+                          }}
+                        ></Button>
 
-                          padding: "10.5px",
-                        }}
-                      >
-                        Apply
-                      </RButton>
+                        <Minus color="#e9adff" />
+                        <Button
+                          label={"Active Cart"}
+                          // background={{ dark: "#a695a3", light: "#FCD8C9" }}
+
+                          onClick={() => {
+                            setCheckoutType("Active");
+                            cartItems.filter(
+                              (crt) =>
+                                crt.onHold === false && crt.id !== activeCart,
+                            ).length >= 1
+                              ? setActiveCart(
+                                  cartItems.filter(
+                                    (crt) =>
+                                      crt.onHold === false &&
+                                      crt.id !== activeCart,
+                                  )[0].id,
+                                )
+                              : "";
+                          }}
+                          primary
+                          style={{
+                            opacity: activeCart === null ? "0.5" : 1,
+                            backgroundColor:
+                              checkoutType !== "Active" && "inherit",
+                          }}
+                        ></Button>
+                      </Stack>
                     </Box>
-                  </Form>
-                </Box>
+                    <Divider style={{ margin: "4px" }} /> {/* Coupon Code  */}
+                    <Box
+                      // width={"70%"}
+                      round={{ size: "xxsmall" }}
+                      background="box"
+                      margin={"small"}
+                      style={{ display: "block" }}
+                    >
+                      <Form onSubmit={handleApplyCoupon} method="post">
+                        <Box
+                          style={{ display: "inline-block", height: "inherit" }}
+                          background={"box"}
+                          width={"70%"}
+                        >
+                          <TextInput
+                            round={{ size: "xxsmall" }}
+                            style={{
+                              background: "inherit",
+                              padding: "10px",
+                              height: "inherit",
+                              outline: "none",
+                              border: "none",
+                            }}
+                            placeholder="Coupon code"
+                            name="coupon"
+                          ></TextInput>
+                        </Box>
+                        <Box
+                          width={"30%"}
+                          style={{
+                            display: "inline-block",
+                            backgroundColor: "inherit",
+                            height: "inherit",
+                          }}
+                        >
+                          <RButton
+                            endIcon={<Coupon />}
+                            type="submit"
+                            style={{
+                              width: "100%",
+                              height: "inherit",
+                              background: "inherit",
+
+                              padding: "10.5px",
+                            }}
+                          >
+                            Apply
+                          </RButton>
+                        </Box>
+                      </Form>
+                    </Box>
+                  </>
+                )}
                 <Box
-                  background={{ dark: "#a695a3", light: "#FCD8C9" }}
+                  background={
+                    paymentActive
+                      ? "inherit"
+                      : { dark: "#a695a3", light: "#FCD8C9" }
+                  }
                   pad={"none"}
                   style={{
-                    height: "10vh",
+                    height: paymentActive ? "7vh" : "10vh",
                     bottom: 0,
                     position: "relative",
-                    marginTop: "20px",
+                    marginTop: paymentActive ? "50px" : "20px",
                   }}
                 >
                   <RButton
                     style={checkoutButtonStyle}
+                    onClick={handleCheckout}
                     startIcon={<Cart color="inherit" />}
                   >
                     {" "}
-                    Checkout{" "}
+                    {paymentActive ? "Edit Cart" : "Checkout"}
                   </RButton>{" "}
                 </Box>
               </Box>
@@ -1434,6 +1957,20 @@ export default function PointOfSale(props) {
         />
       )}
     </Container>
+  ) : (
+    <Container>
+      <POSHeader
+        company={companyData}
+        profile={sessionProfile}
+        setNewSession={setNewSession}
+      ></POSHeader>
+      <OrderComplete
+        orderV={order}
+        posProfile={sessionProfile}
+        handleNewOrder={handleStartNewOrder}
+        orderPayment={orderPayment}
+      />
+    </Container>
   );
 }
 
@@ -1518,7 +2055,15 @@ function NewSession(props) {
                     </Col>
                   </Row>
                   <Row style={{ marginBottom: "20px" }}>
-                    <Col md={24} lg={24} sm={24}>
+                    <Col md={12} lg={12} sm={24}>
+                      <FormField name="name" label="Name">
+                        <TextInput
+                          placeholder="Enter Profile Name"
+                          name="name"
+                        />
+                      </FormField>
+                    </Col>
+                    <Col md={12} lg={12} sm={24}>
                       <FormField name="shop" label="Shop">
                         <Select
                           placeholder="Select Shop"
@@ -1699,7 +2244,7 @@ function NewSession(props) {
                 <Row md={24} lg={24} sm={24} style={{ marginTop: "20px" }}>
                   <FormField label="Starting Balance">
                     <CurrencyInput
-                      id="input-example"
+                      id="starting-bal"
                       placeholder="Starting Balance"
                       name="startingBalance"
                       defaultValue={0.0}

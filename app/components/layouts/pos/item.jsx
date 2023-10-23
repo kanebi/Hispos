@@ -56,66 +56,43 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
   };
   const cardBg = { dark: "#42433E", light: "#f1d7f7" };
   return (
-    <motion.div
-      id={`item-${product.id}-card`}
-      className="itm-card"
-      initial={{
-        borderRadius: "6px",
-        transition: " all 100ms",
-        width: "inherit",
+    // <div color="blue" style={{ backgroundColor: "red", padding :"20px" }}>
+    //   {product.name} NGN 2000
+    // </div>
+     <div
+                            className="item-cont-main"
+                            style={{
+                              // 2.5vw already in use
+                              width: "10vw",
+                              height:
+                                screenHeight && screenHeight < 600
+                                  ? "27vh"
+                                  : "22vh",
+                              borderRadius: "6px",
+                              margin: "0.4vw",
+                              display: "inline-block",
+                            }}
+                          >
+      <motion.div
+        id={`item-${product.id}-card`}
+        className="itm-card"
+        initial={{
+          borderRadius: "6px",
+          transition: " all 100ms",
+          width: "inherit",
+          overflow:"hidden",
+          height: "inherit",
+          color: "#555",
+          scale:"-3px",
 
-        height: "inherit",
-        color: "#555",
-        // scale:  favsO && faved===false && 0
-        opacity: favsO === true ? (faved === true ? 1 : 0) : 1,
-      }}
-      // whileTap={{scale:"50%"}}
-      whileHover={{ boxShadow: "rgba(120, 107, 135, 0.1) 0px 4px 12px" }}
-      // display: favsO && faved && "none",
-    >
-      <Tooltip
-        multiLine={true}
-        message={
-          <Box
-            background={"box"}
-            margin={"0px"}
-            style={{
-              textAlign: "center",
-
-              height: "auto",
-              maxHeight: "30vh",
-              borderRadius: "10px",
-              // width: "500px!important",
-              scrollbarWidth: "thin",
-              overflowY: "auto",
-              overflowX: "hidden",
-            }}
-          >
-            <Stack direction="column">
-              <Heading as={"h4"} color="default" size="20px">
-                {product.name}
-              </Heading>
-              <Divider
-                color="background-color: #f8d1ff;"
-                style={{ margin: "5px" }}
-              />
-              <Text>
-                <Tag
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "bolder",
-                    color: product.price <= 0 ? "red" : "green",
-                    padding: "10px",
-                  }}
-                >
-                  {product.price}
-                </Tag>
-                <br />
-                <small>{product.description}</small>
-              </Text>
-            </Stack>{" "}
-          </Box>
-        }
+          // scale:  favsO && faved===false && 0
+          opacity: favsO === true ? (faved === true ? 1 : 0) : 1,
+        }}
+        whileInView={{marginTop:"0px", scale:0}}
+        
+        // whileTap={{scale:"50%"}}
+        whileHover={{ boxShadow: "rgba(120, 107, 135, 0.1) 0px 4px 12px" }}
+        // display: favsO && faved && "none",
       >
         <Box
           height={"inherit"}
@@ -123,7 +100,7 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
           width={"inherit"}
           style={{
             cursor: "pointer",
-            zIndex: 100,
+            // zIndex: 100,
             textAlign: "center",
             position: "relative",
             boxShadow:
@@ -216,21 +193,66 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
               )}
             </Tag>
           </Box>
-          <Box
-            style={{
-              height: "10.5vh",
-              backgroundImage: `url(${
-                product.image ? product.image : productIcon
-              })`,
-              backgroundSize: product.image ? "100%" : "45%",
-              zIndex: 200,
-              backgroundPosition: "center",
-              backgroundPositionY: product.image ? "center" : "35%",
-              backgroundRepeat: "no-repeat",
-              objectFit: "cover",
-            }}
-            onClick={handleAddToCart}
-          ></Box>
+          <Tooltip
+            multiLine={true}
+            message={
+              <Box
+                background={"box"}
+                margin={"0px"}
+                style={{
+                  textAlign: "center",
+
+                  height: "auto",
+                  maxHeight: "30vh",
+                  borderRadius: "10px",
+                  // width: "500px!important",
+                  scrollbarWidth: "thin",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                }}
+              >
+                <Stack direction="column">
+                  <Heading as={"h4"} color="default" size="20px">
+                    {product.name}
+                  </Heading>
+                  <Divider
+                    color="background-color: #f8d1ff;"
+                    style={{ margin: "5px" }}
+                  />
+                  <Text>
+                    <Tag
+                      style={{
+                        fontSize: "16px",
+                        fontWeight: "bolder",
+                        color: product.price <= 0 ? "red" : "green",
+                        padding: "10px",
+                      }}
+                    >
+                      {product.price}
+                    </Tag>
+                    <br />
+                    <small>{product.description}</small>
+                  </Text>
+                </Stack>{" "}
+              </Box>
+            }
+          >
+            <Box
+              style={{
+                height: "10.5vh",
+                backgroundImage: `url(${
+                  product.image ? product.image : productIcon
+                })`,
+                backgroundSize: product.image ? "100%" : "45%",
+                // zIndex: 200,
+                backgroundPosition: "center",
+                backgroundPositionY: product.image ? "center" : "35%",
+                backgroundRepeat: "no-repeat",
+                objectFit: "cover",
+              }}
+              onClick={handleAddToCart}
+            ></Box>
+          </Tooltip>
           <Box
             style={{ width: "inherit", height: "5vh", position: "relative" }}
           >
@@ -240,7 +262,7 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
                 right: 0,
                 bottom: screenSize === "l" ? 60 : "",
                 // top: screenSize === "l" ?0:-30,
-                zIndex: 250,
+                // zIndex: 250,
 
                 boxShadow:
                   "rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgb(209, 213, 219) 0px 0px 0px 1px, inset rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
@@ -393,7 +415,6 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
             </motion.div>
           </Box>
         </Box>
-      </Tooltip>
-    </motion.div>
+      </motion.div></div>
   );
 }
