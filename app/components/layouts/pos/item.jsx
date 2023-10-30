@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Box, Heading, ResponsiveContext, Text } from "grommet";
 import "rsuite/dist/rsuite.min.css";
 
-import { Button as RButton, Tag, Stack, Divider } from "rsuite";
+import { Button as RButton, Tag, Stack, Divider, toaster, Message } from "rsuite";
 import productIcon from "../../../../public/default_images/bascket.png";
 import tapSound from "../../../../public/default_audio/tap.ogg";
 import { Pin, Favorite, Hide, Edit } from "grommet-icons";
@@ -11,7 +11,13 @@ import styled from "../../styled";
 import { Pined } from "@rsuite/icons";
 import { FloatArea, StatusLabel, Tooltip } from "smarthr-ui";
 
-export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
+export default function ItemCard({
+  product,
+  favsO,
+  itemsList,
+  addToCart,
+  setItemsFunc,
+}) {
   const [pined, setPined] = React.useState(product?.userPined);
   const [faved, setFaved] = React.useState(product?.userFav);
   const [carted, setCarted] = React.useState(false);
@@ -25,12 +31,15 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
   }, []);
 
   const handleAddToCart = () => {
-    {
-      alert(screenSize);
-    }
-
     setCarted(true);
     new Audio(tapSound).play();
+   return  new Promise((resolve, reject) => {
+     addToCart(product)
+      resolve();
+    }).then((val) =>{
+    //  ??
+    }
+    ).catch((err)=> toaster.push(<Message>Error while adding item to cart</Message>));
   };
 
   const handlePinItem = () => {
@@ -45,9 +54,7 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
   const handleFavItem = () => {
     const prod = product;
     prod.userFav = !faved;
-    console.log(prod);
     const newItems = itemsList.map((itm) => (itm.id !== prod.id ? itm : prod));
-    console.log(newItems);
 
     setItemsFunc([...newItems]);
     setFaved(!faved);
@@ -59,20 +66,17 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
     // <div color="blue" style={{ backgroundColor: "red", padding :"20px" }}>
     //   {product.name} NGN 2000
     // </div>
-     <div
-                            className="item-cont-main"
-                            style={{
-                              // 2.5vw already in use
-                              width: "10vw",
-                              height:
-                                screenHeight && screenHeight < 600
-                                  ? "27vh"
-                                  : "22vh",
-                              borderRadius: "6px",
-                              margin: "0.4vw",
-                              display: "inline-block",
-                            }}
-                          >
+    <div
+      className="item-cont-main"
+      style={{
+        // 2.5vw already in use
+        width: "10vw",
+        height: screenHeight && screenHeight < 600 ? "27vh" : "22vh",
+        borderRadius: "6px",
+        margin: "0.4vw",
+        display: "inline-block",
+      }}
+    >
       <motion.div
         id={`item-${product.id}-card`}
         className="itm-card"
@@ -80,16 +84,15 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
           borderRadius: "6px",
           transition: " all 100ms",
           width: "inherit",
-          overflow:"hidden",
+          overflow: "hidden",
           height: "inherit",
           color: "#555",
-          scale:"-3px",
+          scale: 0.8,
 
           // scale:  favsO && faved===false && 0
           opacity: favsO === true ? (faved === true ? 1 : 0) : 1,
         }}
-        whileInView={{marginTop:"0px", scale:0}}
-        
+        whileInView={{ scale: 1 }}
         // whileTap={{scale:"50%"}}
         whileHover={{ boxShadow: "rgba(120, 107, 135, 0.1) 0px 4px 12px" }}
         // display: favsO && faved && "none",
@@ -415,6 +418,7 @@ export default function ItemCard({ product, favsO, itemsList, setItemsFunc }) {
             </motion.div>
           </Box>
         </Box>
-      </motion.div></div>
+      </motion.div>
+    </div>
   );
 }

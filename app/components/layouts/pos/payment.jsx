@@ -236,6 +236,7 @@ export default function Payment({ orderV, setOrderFunc, profile, handleSubmitPay
     for (let i = 0; i < paymentInputRefs.current.length; i++) {
       totalSum += +replaceAll(",", "", paymentInputRefs.current[i].value);
     }
+
     return totalSum;
   };
   const paidAmount = getPaymentFieldsTotal();

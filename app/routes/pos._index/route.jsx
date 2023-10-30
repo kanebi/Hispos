@@ -40,6 +40,7 @@ import {
   List,
   Message,
   useToaster,
+  Progress,
 } from "rsuite";
 import "rsuite/dist/rsuite.min.css";
 import POSHeader from "../../components/layouts/pos/header";
@@ -75,7 +76,7 @@ import ItemCard from "../../components/layouts/pos/item";
 import itemSeed from "../../components/seeds/itemSeed";
 import { uid } from "react-uid";
 import POSCartItem from "../../components/layouts/pos/cartItem";
-import { CheckOutline, Coupon, Icon, Minus } from "@rsuite/icons";
+import { CheckOutline, Coupon, Icon, Minus, Resize } from "@rsuite/icons";
 import EditCartItem from "../../components/layouts/pos/editCartItem";
 import { toast } from "react-toastify";
 import { Form, useActionData, useFetcher, useSubmit } from "@remix-run/react";
@@ -87,7 +88,7 @@ import OrderComplete from "../../components/layouts/pos/orderComplete";
 import mailer from "../../../utils/mail.js";
 import { replaceAll } from "../../../utils/str_utils";
 
-export function loader({ params, request }) {
+export async function loader({ params, request }) {
   const customer = new URL(request.url).searchParams.get("customer");
   const payment = new URL(request.url).searchParams.get("paymentMethods");
   console.log(customer);
@@ -166,7 +167,7 @@ export async function action({ request }) {
     orderNote = payment.orderNote;
 
     var pyMethodsUsed = [];
-
+    console.log(payment);
     for (const key in payment) {
       if (
         key !== "orderNote" &&
@@ -236,7 +237,7 @@ export async function action({ request }) {
 
   if (data.coupon) {
     var coupon = null;
-    if (data.coupon === {}) {
+    if (data.coupon?.code === null) {
       coupon = {};
     } else {
       // get Coupon from db
@@ -267,8 +268,14 @@ export async function action({ request }) {
     });
     return json({ msg: "Email Sent", type: "success" });
   }
+  if (data.action === "add_to_cart") {
+    // add cart to db and return
+  }
   return json({ order: order });
 }
+
+const getEscapedText = (text) => text.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&");
+const formatSearchExpression = (text) => new RegExp(getEscapedText(text), "i");
 
 export default function PointOfSale(props) {
   const [loading, setloading] = React.useState(false);
@@ -295,10 +302,13 @@ export default function PointOfSale(props) {
     "obigbo profile",
     "aba profile",
   ]);
-  const [itemsLoading, setItemsLoading] = React.useState(false);
+  const [itemsLoading, setItemsLoading] = React.useState(true);
   const [newSession, setNewSession] = React.useState(false);
   const [searchActive, setSearchActive] = React.useState(false);
-  const [items, setItems] = React.useState(itemSeed);
+  const [originItems, setOriginItems] = React.useState(itemSeed);
+
+  const [items, setItems] = React.useState(originItems);
+  const [searchKeyword, setSearchKeyword] = React.useState("");
   const screenSize = React.useContext(ResponsiveContext);
   const [systemUsers, setSystemUser] = React.useState([
     "kanebi",
@@ -311,129 +321,125 @@ export default function PointOfSale(props) {
   const [favsOnly, setFavsOnly] = React.useState(false);
   const [screenHeight, setScreenHeight] = React.useState(undefined);
   const [cartItems, setCartItems] = React.useState([
-    {
-      id: 1,
-      onHold: false,
-      items: [
-        {
-          id: 22,
-          item: {
-            id: 5,
-            name: "Pizza",
-            price_amount: "1800",
-            valuation_rate: "1800",
-            image: null,
-            min_order_qty: 1,
-            allow_negative_stock: true,
-            price_currency: "NGN",
-            description: "Delicious pizza with various toppings.",
-            price: "NGN18000",
-            stock_uom: "Unit",
-            tax: "22",
-            available_stock_quantity: 15,
-            barcode: "sdfjso7890jsf",
-            userFav: false,
-            userPined: true,
-            warehouse: "obigbp",
-          },
-          quantity: 2,
-          taxTotal: "333",
-          percDiscount: 0,
-          totalPrice: "NGN3600",
-        },
-        {
-          item: {
-            id: 8,
-            name: "Fish Fillet",
-            price_amount: "2200",
-            image: null,
-            price_currency: "NGN",
-            description: "Tender fish fillet.",
-            price: "NGN22000",
-            stock_uom: "Unit",
-            min_order_qty: 1,
-            valuation_rate: "2000",
-            tax: "8.2",
-            allow_negative_stock: false,
-            available_stock_quantity: 4,
-            barcode: "sdfjso4567jsf",
-            userFav: true,
-            userPined: false,
-          },
-          id: 23,
-          quantity: 1,
-          taxTotal: "222",
-          percDiscount: 0,
-
-          totalPrice: "NGN2200",
-        },
-      ],
-      totalPrice: "NGN2300",
-      totalPriceAmount: "2300",
-    },
-    {
-      id: 2,
-      onHold: true,
-      items: [
-        {
-          item: {
-            id: 11,
-            name: "Tacos",
-            price_amount: "1700",
-            image: null,
-            price_currency: "NGN",
-            description: "Tasty tacos.",
-            price: "NGN17000",
-            stock_uom: "Unit",
-            available_stock_quantity: 6,
-            min_order_qty: 2,
-            valuation_rate: "10000",
-            barcode: "sdfjso1234jsf",
-            userFav: false,
-            tax: "9",
-            allow_negative_stock: false,
-            userPined: true,
-            warehouse: "olomoro",
-          },
-          id: 28,
-
-          quantity: 3,
-          taxTotal: "93",
-          percDiscount: 0,
-          totalPrice: "NGN5100",
-        },
-        {
-          id: 26,
-
-          item: {
-            id: 17,
-            name: "Shrimp Scampi",
-            price_amount: "2600",
-            image: null,
-            price_currency: "NGN",
-            min_order_qty: 1,
-            description: "Scrumptious shrimp scampi.",
-            price: "NGN26000",
-            allow_negative_stock: true,
-            stock_uom: "Unit",
-            available_stock_quantity: 3,
-            valuation_rate: "2000",
-            barcode: "sdfjso5678jsf",
-            userFav: false,
-            tax: "2.22",
-            userPined: true,
-            warehouse: "obidgo",
-          },
-          taxTotal: "4",
-          quantity: 2,
-          percDiscount: 0,
-
-          totalPrice: "NGN5200",
-        },
-      ],
-      totalPrice: "NGN10300",
-      totalPriceAmount: "10300",
-    },
+    // {
+    //   id: 1,
+    //   onHold: false,
+    //   items: [
+    //     {
+    //       id: 22,
+    //       item: {
+    //         id: 5,
+    //         name: "Pizza",
+    //         price_amount: "1800",
+    //         valuation_rate: "1800",
+    //         image: null,
+    //         min_order_qty: 1,
+    //         allow_negative_stock: true,
+    //         price_currency: "NGN",
+    //         description: "Delicious pizza with various toppings.",
+    //         price: "NGN18000",
+    //         stock_uom: "Unit",
+    //         tax: "22",
+    //         available_stock_quantity: 15,
+    //         barcode: "sdfjso7890jsf",
+    //         userFav: false,
+    //         userPined: true,
+    //         warehouse: "obigbp",
+    //       },
+    //       quantity: 2,
+    //       taxTotal: "333",
+    //       percDiscount: 0,
+    //       totalPrice: "NGN3600",
+    //     },
+    //     {
+    //       item: {
+    //         id: 8,
+    //         name: "Fish Fillet",
+    //         price_amount: "2200",
+    //         image: null,
+    //         price_currency: "NGN",
+    //         description: "Tender fish fillet.",
+    //         price: "NGN22000",
+    //         stock_uom: "Unit",
+    //         min_order_qty: 1,
+    //         valuation_rate: "2000",
+    //         tax: "8.2",
+    //         allow_negative_stock: false,
+    //         available_stock_quantity: 4,
+    //         barcode: "sdfjso4567jsf",
+    //         userFav: true,
+    //         userPined: false,
+    //       },
+    //       id: 23,
+    //       quantity: 1,
+    //       taxTotal: "222",
+    //       percDiscount: 0,
+    //       totalPrice: "NGN2200",
+    //     },
+    //   ],
+    //   totalPrice: "NGN2300",
+    //   totalPriceAmount: "2300",
+    // },
+    // {
+    //   id: 2,
+    //   onHold: true,
+    //   items: [
+    //     {
+    //       item: {
+    //         id: 11,
+    //         name: "Tacos",
+    //         price_amount: "1700",
+    //         image: null,
+    //         price_currency: "NGN",
+    //         description: "Tasty tacos.",
+    //         price: "NGN17000",
+    //         stock_uom: "Unit",
+    //         available_stock_quantity: 6,
+    //         min_order_qty: 2,
+    //         valuation_rate: "10000",
+    //         barcode: "sdfjso1234jsf",
+    //         userFav: false,
+    //         tax: "9",
+    //         allow_negative_stock: false,
+    //         userPined: true,
+    //         warehouse: "olomoro",
+    //       },
+    //       id: 28,
+    //       quantity: 3,
+    //       taxTotal: "93",
+    //       percDiscount: 0,
+    //       totalPrice: "NGN5100",
+    //     },
+    //     {
+    //       id: 26,
+    //       item: {
+    //         id: 17,
+    //         name: "Shrimp Scampi",
+    //         price_amount: "2600",
+    //         image: null,
+    //         price_currency: "NGN",
+    //         min_order_qty: 1,
+    //         description: "Scrumptious shrimp scampi.",
+    //         price: "NGN26000",
+    //         allow_negative_stock: true,
+    //         stock_uom: "Unit",
+    //         available_stock_quantity: 3,
+    //         valuation_rate: "2000",
+    //         barcode: "sdfjso5678jsf",
+    //         userFav: false,
+    //         tax: "2.22",
+    //         userPined: true,
+    //         warehouse: "obidgo",
+    //       },
+    //       taxTotal: "4",
+    //       quantity: 2,
+    //       percDiscount: 0,
+    //       totalPrice: "NGN5200",
+    //     },
+    //   ],
+    //   totalPrice: "NGN10300",
+    //   totalPriceAmount: "10300",
+    // },
   ]);
   const [cartsHeld, setCartsHeld] = React.useState(false);
   const [activeCart, setActiveCart] = React.useState(cartItems[0]?.id || null);
@@ -642,8 +648,10 @@ export default function PointOfSale(props) {
     ],
     status: "paid",
   });
+  const [fullScreen, setFullScreen] = React.useState(false)
 
   React.useEffect(() => {
+    setItemsLoading(false);
     // update the itemsList or origin list
     const newItemsList = itemsList.map(
       (itm) => items.find((prd) => prd.id === itm.id) || itm,
@@ -725,6 +733,10 @@ export default function PointOfSale(props) {
       }
       // }
     }
+
+    if (response?.carts) {
+      // setCartItems(response.carts)
+    }
   }, [fetcher.data]);
 
   const handleStartNewOrder = () => {
@@ -745,6 +757,82 @@ export default function PointOfSale(props) {
     const data = { payment: JSON.stringify(entries) };
     fetcher.submit(data, { method: "POST" });
   };
+  const handleAddToCart = (prd) => {
+    var addedItem;
+    var cart = {};
+    if (
+      cartItems.length <= 0 ||
+      cartItems.filter((itm) => itm.onHold === true).length === cartItems.length
+    ) {
+      const cartID = cartItems.length + 1;
+      addedItem = {
+        id: 1,
+        item: prd,
+        quantity: 1,
+        taxTotal: "333",
+        percDiscount: 0,
+        totalPrice: "NGN3600",
+      };
+      cart = {
+        id: cartID,
+        onHold: false,
+        items: [addedItem],
+      };
+
+      // update states
+      setCartItems((prev) => [...prev, cart]);
+      setActiveCart(cartID);
+    } else {
+      cart = cartItems.find((itm) => itm.id === activeCart);
+      if (cart) {
+        const alreadyExistingItem = cart.items.filter(
+          (itm) => itm.item.id === prd.id,
+        )[0];
+
+        if (alreadyExistingItem) {
+          alreadyExistingItem.quantity =
+            +alreadyExistingItem.quantity + 1 >
+            +alreadyExistingItem.item.available_stock_quantity
+              ? +alreadyExistingItem.quantity
+              : +alreadyExistingItem.quantity + 1;
+
+          const newCartItems = cart.items.map((itm) =>
+            itm.item.id === alreadyExistingItem.item.id
+              ? alreadyExistingItem
+              : itm,
+          );
+          cart.items = newCartItems;
+          addedItem = alreadyExistingItem;
+        } else {
+          const newCartItem = {
+            id: cart.items.length + 1,
+            item: prd,
+            quantity: 1,
+            taxTotal: "333",
+            percDiscount: 0,
+            totalPrice: "NGN3600",
+          };
+          cart.items = [...cart.items, newCartItem];
+          addedItem = newCartItem;
+        }
+        setCartItems((prev) => [
+          ...prev.map((crt) => (crt.id === cart.id ? cart : crt)),
+        ]);
+      } else
+        toaster.push(
+          <Message type="info">Please select a cart to add item</Message>,
+        );
+    }
+    document
+      .getElementById("itm-cart-" + prd.name + "-" + cart.id + "-" + prd.id)
+      ?.scrollIntoView();
+    // send to server to save in session
+    fetcher.submit(
+      { action: "add_to_cart", orderCode: "122322", item: JSON.stringify(prd) },
+      { method: "post" },
+    );
+  };
+
   const handleCheckout = () => {
     if (paymentActive) {
       return setPaymentActive(false);
@@ -756,11 +844,7 @@ export default function PointOfSale(props) {
         </Message>,
       );
     }
-    if (
-      customerInfo.id === null ||
-      customerInfo.id === "" ||
-      customerInfo.id === undefined
-    ) {
+    if (customerInfo === null || !customerInfo?.id) {
       return toaster.push(
         <Message showIcon type="error">
           Select a customer{" "}
@@ -847,15 +931,35 @@ export default function PointOfSale(props) {
     const response = fetcher.data;
     setOrderCoupon({});
   };
-  const handleUpdateCart = (cart) => {
+  const handleUpdateCart = ({ cart, item = null }) => {
+    if (item) {
+      cart.items = cart.items.map((itm) => (itm.id === item.id ? item : itm));
+    }
+
     const newCarts = cartItems.map((crt) => (crt.id !== cart.id ? crt : cart));
-    setCartItems(() => [...newCarts]);
+
+    setCartItems((prev) => [...newCarts]);
   };
 
   const resetItems = () => {
     setItems(itemsList);
   };
-  const handleSearchItems = () => {};
+  const handleSearchItems = (val) => {
+    setItemsLoading(true);
+    const exp = formatSearchExpression(val);
+    const newItems = originItems.filter(
+      (option) =>
+        exp.test(option.barcode) ||
+        exp.test(option.name) ||
+        exp.test(option.code),
+    );
+    setItems(newItems);
+    setSearchKeyword(val);
+    if (val.trim().length <= 0) {
+      setItems(originItems);
+    }
+    setItemsLoading(false);
+  };
 
   const handleShowFavOnly = () => {
     if (favsOnly === false) {
@@ -918,6 +1022,7 @@ export default function PointOfSale(props) {
     }
     const newItemList = targetCart.items.filter((itm) => itm.id != item.id);
     targetCart.items = newItemList;
+
     const newCartList = cartItems.map((crt) =>
       crt.id === targetCart.id ? targetCart : crt,
     );
@@ -990,6 +1095,38 @@ export default function PointOfSale(props) {
 
     setCartItems((prev) => [...newCarts]);
   };
+  const  toggleFullScreen = () =>{
+  
+    if (
+      !document.fullscreenElement && // alternative standard method
+      !document.mozFullScreenElement &&
+      !document.webkitFullscreenElement
+    ) {
+      // current working methods
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen();
+      } else if (document.documentElement.mozRequestFullScreen) {
+        document.documentElement.mozRequestFullScreen();
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        document.documentElement.webkitRequestFullscreen(
+          Element.ALLOW_KEYBOARD_INPUT,
+        );
+      }
+              setFullScreen(true);
+
+    } else {
+        setFullScreen(false);
+
+      if (document.cancelFullScreen) {
+      
+        document.cancelFullScreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.webkitCancelFullScreen) {
+        document.webkitCancelFullScreen();
+      }
+    }
+  }   
   return !orderComplete ? (
     <Container
       // style={{
@@ -1001,12 +1138,14 @@ export default function PointOfSale(props) {
       //           }}
       style={{ overflowX: "hidden" }}
     >
-      <POSHeader
-        company={companyData}
-        profile={sessionProfile}
-        setNewSession={setNewSession}
-      ></POSHeader>
-      <Grid style={{ width: "90%", height: "100vh" }}>
+      {!fullScreen && (
+        <POSHeader
+          company={companyData}
+          profile={sessionProfile}
+          setNewSession={setNewSession}
+        ></POSHeader>
+      )}
+      <Grid style={{ width: fullScreen ? "100%" : "90%", height: "100vh" }}>
         <Row style={{ height: "10vh", overflow: "hidden" }}>
           <Col xs={24} lg={34} md={34} className="Pos-Header">
             <Header
@@ -1026,6 +1165,7 @@ export default function PointOfSale(props) {
                 >
                   <DataSearch
                     size="inherit"
+                    defaultValue={searchKeyword}
                     style={{
                       height: "40px",
                       border: "inherit",
@@ -1033,7 +1173,9 @@ export default function PointOfSale(props) {
                       outline: "none",
                     }}
                     icon={<Search size="16px" />}
-                    onChange={() => setSearchActive(false)}
+                    // onChange={handleSearchItems}
+                    inputMode="search"
+                    onKeyUp={(e) => handleSearchItems(e.target.value)}
                     onFocus={() =>
                       searchActive === false ? setSearchActive(true) : ""
                     }
@@ -1065,6 +1207,18 @@ export default function PointOfSale(props) {
                 </Box>
               </Box>
               <Navbar style={{ backgroundColor: "inherit", padding: "10px" }}>
+                <Nav title="Full Screen" pullRight>
+                  <IconButton
+                    style={{
+                      marginLeft: "10px",
+
+                      boxShadow:
+                        " rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
+                    }}
+                    onClick={toggleFullScreen}
+                    icon={<Resize style={{ fontSize: "12px" }} />}
+                  ></IconButton>
+                </Nav>
                 <Nav
                   hidden={paymentActive}
                   title="Put Transaction on Hold"
@@ -1088,17 +1242,6 @@ export default function PointOfSale(props) {
                     onClick={handleHoldCart}
                   ></IconButton>
                 </Nav>
-                <Nav title="Open Calculator" pullRight>
-                  <IconButton
-                    style={{
-                      marginLeft: "10px",
-
-                      boxShadow:
-                        " rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px",
-                    }}
-                    icon={<Calculator size="small" />}
-                  ></IconButton>
-                </Nav>
 
                 <Nav title="Cart Grid View" pullRight>
                   <IconButton
@@ -1117,6 +1260,7 @@ export default function PointOfSale(props) {
                     }
                   ></IconButton>
                 </Nav>
+
                 {itemEditOn && (
                   <Nav title="Hide Item Edit View" pullRight>
                     <IconButton
@@ -1180,11 +1324,13 @@ export default function PointOfSale(props) {
                     paddingTop: "10px",
                     paddingBottom: "10px",
                     scrollMargin: "0px ",
+                    minHeight: "60vh",
                     scrollBehavior: "smooth",
                     scrollbarColor: "pink",
                     scrollbarGutter: "stable",
                     scrollbarWidth: "thin",
                     boxShadow: "rgba(159, 112, 212, 0.2) 0px 7px 29px 0px",
+                    paddingLeft: fullScreen ? "30px" : "0px",
                   }}
                 >
                   {/* Pinned items  */}
@@ -1192,14 +1338,15 @@ export default function PointOfSale(props) {
                   {items.map(
                     (product, index) =>
                       product?.userPined && (
-                   
-                          <ItemCard
-                            itemsList={items}
-                            setItemsFunc={setItems}
-                            product={product}
-                            favsO={favsOnly}
-                            originItemList={itemsList}
-                          />
+                        <ItemCard
+                          key={uid(product)}
+                          addToCart={handleAddToCart}
+                          itemsList={items}
+                          setItemsFunc={setItems}
+                          product={product}
+                          favsO={favsOnly}
+                          originItemList={itemsList}
+                        />
                       ),
                   )}
 
@@ -1210,6 +1357,7 @@ export default function PointOfSale(props) {
                       !product?.userPined && (
                         <ItemCard
                           key={uid(product)}
+                          addToCart={handleAddToCart}
                           itemsList={items}
                           setItemsFunc={setItems}
                           product={product}
@@ -1217,6 +1365,32 @@ export default function PointOfSale(props) {
                           originItemList={itemsList}
                         />
                       ),
+                  )}
+
+                  {items.length <= 0 && !loading && (
+                    <Box style={{ textAlign: "center", marginTop: "20%" }}>
+                      <Heading
+                        as={"h3"}
+                        size="xsmall"
+                        margin={"xsmall"}
+                        style={{ opacity: 0.5 }}
+                        textAlign="center"
+                      >
+                        {searchKeyword.trim().length >= 1 ? (
+                          <>No Item Found</>
+                        ) : (
+                          <>Inventory is Empty</>
+                        )}
+                      </Heading>
+                      <div style={{ margin: "10px" }}>
+                        {searchKeyword.trim().length <= 0 && (
+                          <Button primary label="Create Item"></Button>
+                        )}
+                      </div>
+                    </Box>
+                  )}
+                  {itemsLoading && (
+                    <Loader vertical content="loading" backdrop></Loader>
                   )}
                 </Box>
               )}
@@ -1246,34 +1420,60 @@ export default function PointOfSale(props) {
                     Item Carts
                   </Heading>
                 </Header>
-                {cartItems.map((cart, index) => (
-                  <div
-                    onClick={() => {
-                      cart.onHold === false ? setActiveCart(cart.id) : "";
-                      setPseudoActiveCart(cart.id);
-                    }}
+                {cartItems.length >= 1 ? (
+                  cartItems.map((cart, index) => (
+                    <div
+                      onClick={() => {
+                        cart.onHold === false ? setActiveCart(cart.id) : "";
+                        setPseudoActiveCart(cart.id);
+                      }}
+                      style={{
+                        cursor: "pointer",
+                        display:
+                          paymentActive && cart.onHold ? "none" : "block",
+                      }}
+                      key={uid(cart)}
+                    >
+                      <POSCartItem
+                        setEdit={setItemEditOn}
+                        paymentIsActive={paymentActive}
+                        setCurrentEdit={setCurrentItemOnEdit}
+                        currentOnEdit={currentItemOnEdit}
+                        cart={cart}
+                        gridView={cartGridView}
+                        deleteCartItem={handleRemoveItemFromCart}
+                        handleUpdateCartFunc={handleUpdateCart}
+                        handleDeleteCart={deleteCart}
+                        defaultCurrencV={defaultCurrency}
+                        editOn={itemEditOn}
+                        active={cart.id === activeCart}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <Box
                     style={{
-                      cursor: "pointer",
-                      display: paymentActive && cart.onHold ? "none" : "block",
+                      textAlign: "center",
+                      width: "100%",
+                      height: "100%",
+                      marginTop: "40%",
                     }}
-                    key={uid(cart)}
                   >
-                    <POSCartItem
-                      setEdit={setItemEditOn}
-                      paymentIsActive={paymentActive}
-                      setCurrentEdit={setCurrentItemOnEdit}
-                      currentOnEdit={currentItemOnEdit}
-                      cart={cart}
-                      gridView={cartGridView}
-                      deleteCartItem={handleRemoveItemFromCart}
-                      handleUpdateCartFunc={handleUpdateCart}
-                      handleDeleteCart={deleteCart}
-                      defaultCurrencV={defaultCurrency}
-                      editOn={itemEditOn}
-                      active={cart.id === activeCart}
-                    />
-                  </div>
-                ))}
+                    <Heading
+                      textAlign="center"
+                      as="h4"
+                      size="small"
+                      color="default"
+                      style={{ opacity: 0.5 }}
+                    >
+                      {" "}
+                      No Cart items yet
+                    </Heading>
+                    <small>
+                      Click on any item and it will be added to a new cart
+                    </small>
+                  </Box>
+                )}
                 {currentItemOnEdit && (
                   <motion.div
                     initial={{
@@ -1563,56 +1763,61 @@ export default function PointOfSale(props) {
                       </Stack>
                     </Box>
                     <Divider style={{ margin: "4px" }} /> {/* Coupon Code  */}
-                    <Box
-                      // width={"70%"}
-                      round={{ size: "xxsmall" }}
-                      background="box"
-                      margin={"small"}
-                      style={{ display: "block" }}
-                    >
-                      <Form onSubmit={handleApplyCoupon} method="post">
-                        <Box
-                          style={{ display: "inline-block", height: "inherit" }}
-                          background={"box"}
-                          width={"70%"}
+                    <Form onSubmit={handleApplyCoupon} method="post">
+                      <Box
+                        // width={"70%"}
+                        height={"8vh"}
+                        round={{ size: "xxsmall" }}
+                        background="box"
+                        // margin={"small"}
+                        style={{ display: "block", width: "100%" }}
+                      >
+                        <div
+                          style={{
+                            height: "inherit",
+                            width: "70%",
+                            display: "inline-block",
+                          }}
                         >
                           <TextInput
                             round={{ size: "xxsmall" }}
                             style={{
                               background: "inherit",
                               padding: "10px",
-                              height: "inherit",
+                              width: "inherit",
                               outline: "none",
+
                               border: "none",
                             }}
                             placeholder="Coupon code"
                             name="coupon"
                           ></TextInput>
-                        </Box>
-                        <Box
-                          width={"30%"}
+                        </div>
+                        <div
                           style={{
-                            display: "inline-block",
-                            backgroundColor: "inherit",
                             height: "inherit",
+                            width: "30%",
+                            display: "inline-block",
                           }}
                         >
                           <RButton
                             endIcon={<Coupon />}
                             type="submit"
                             style={{
-                              width: "100%",
+                              // paddingTop: "auto",
                               height: "inherit",
-                              background: "inherit",
-
+                              width: "100%",
+                              backgroundColor: "inherit",
                               padding: "10.5px",
+                              fontWeight: "bold",
+                              fontSize: "17px",
                             }}
                           >
                             Apply
                           </RButton>
-                        </Box>
-                      </Form>
-                    </Box>
+                        </div>
+                      </Box>{" "}
+                    </Form>
                   </>
                 )}
                 <Box
@@ -1682,7 +1887,7 @@ export default function PointOfSale(props) {
                           padding: "0px",
                           width: "100%",
                           margin: "0 auto",
-                          textAlign: "center ",
+                          textAlign: "center",
                           backgroundColor: "inherit",
                         }}
                       >
@@ -1749,7 +1954,7 @@ export default function PointOfSale(props) {
                           padding: "0px",
                           width: "100%",
                           margin: "0 auto",
-                          textAlign: "center ",
+                          textAlign: "center",
                           backgroundColor: "inherit",
                         }}
                       >
@@ -1814,7 +2019,7 @@ export default function PointOfSale(props) {
                           padding: "0px",
                           width: "100%",
                           margin: "0 auto",
-                          textAlign: "center ",
+                          textAlign: "center",
                           backgroundColor: "inherit",
                         }}
                       >
@@ -1878,7 +2083,7 @@ export default function PointOfSale(props) {
                           padding: "0px",
                           width: "100%",
                           margin: "0 auto",
-                          textAlign: "center ",
+                          textAlign: "center",
                           backgroundColor: "inherit",
                         }}
                       >

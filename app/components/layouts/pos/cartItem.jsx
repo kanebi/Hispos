@@ -30,6 +30,7 @@ import productIcon from "../../../../public/default_images/bascket.png";
 import itemSeed from "../../seeds/itemSeed";
 import { FaArrowDownIcon, FaMinusIcon, FaPlusIcon } from "smarthr-ui";
 import { toast } from "react-toastify";
+import { replaceAll } from "../../../../utils/str_utils";
 
 const CartItem = ({
   item,
@@ -91,8 +92,9 @@ const CartItem = ({
         +value >= item.item.min_order_qty &&
         +value <= item.item.available_stock_quantity
       ) {
-        setQuantity(+value);
-        return updateCarts({ newQty: +value });
+        value = value.endsWith(".") ? value  : +value;
+        setQuantity(value);
+        return updateCarts({ newQty: value });
       } else {
         toast.info(
           "Qty lower than minimum stock Qty or Qty more than available Stock Qty",
@@ -142,11 +144,12 @@ const CartItem = ({
             fontWeight: "bolder",
             fontSize: "17px",
             lineHeight: 1.5,
+            overflow: "none",
             maxWidth: "70px",
             maxHeight: "20px",
             height: "20px",
             textOverflow: "ellipsis",
-            overflowY: "hidden",
+            overflow: "hidden",
           }}
         >
           <Text>{item.item.name}</Text>
@@ -219,7 +222,7 @@ const CartItem = ({
           )}{" "}
         </Text>
 
-        <Box title="Item Name">
+        <Box title={item.item.name}>
           <Input
             style={{
               margin: "5px",
@@ -254,7 +257,7 @@ const CartItem = ({
                   src={item.item.image ? item.item.image : productIcon}
                 ></img>
               </Box>
-              <Box title="Item Name">
+              <Box title={item.item.name}>
                 <Text
                   style={{
                     fontWeight: "bolder",
@@ -276,21 +279,24 @@ const CartItem = ({
         <FlexboxGrid.Item colspan={6}>
           <Box title="Item Quantity">
             <Stack direction="column">
-            {paymentActive ? <Text>Quantity</Text>:
-              <ButtonGroup >
-                <RButton
-                  startIcon={<FaPlusIcon />}
-                  // style={{ background: "inherit" }}
-                  title={"add-up qty"}
-                  onClick={handleTopItem}
-                ></RButton>
+              {paymentActive ? (
+                <Text>Quantity</Text>
+              ) : (
+                <ButtonGroup>
+                  <RButton
+                    startIcon={<FaPlusIcon />}
+                    // style={{ background: "inherit" }}
+                    title={"add-up qty"}
+                    onClick={handleTopItem}
+                  ></RButton>
 
-                <RButton
-                  startIcon={<FaMinusIcon />}
-                  title={"reduce qty"}
-                  onClick={handleReduceItem}
-                ></RButton>
-              </ButtonGroup>}
+                  <RButton
+                    startIcon={<FaMinusIcon />}
+                    title={"reduce qty"}
+                    onClick={handleReduceItem}
+                  ></RButton>
+                </ButtonGroup>
+              )}
               <Input
                 style={{
                   margin: "5px",
@@ -496,7 +502,7 @@ export default function POSCartItem({
     // cart.items = cartItems;
     // handleUpdateCartFunc(cart);
     setCartItems(cart.items);
-  }, [cart.onHold, cartItems, editOn]);
+  }, [cart.onHold, cart.items, editOn]);
 
   const tertiaryLinks = [
     {
@@ -515,7 +521,7 @@ export default function POSCartItem({
     );
 
     // setCartItems(newCartItems);
-    handleUpdateCartFunc(item);
+    handleUpdateCartFunc({ cart: cart, item: item });
   };
 
   const deleteCart = () => {
@@ -523,7 +529,7 @@ export default function POSCartItem({
   };
   const holdCart = () => {
     cart.onHold = !held;
-    handleUpdateCartFunc(cart);
+    handleUpdateCartFunc({ cart: cart });
     setHeld(!held);
   };
 
@@ -586,6 +592,7 @@ export default function POSCartItem({
                   >
                     {" "}
                     <motion.div
+                      id={"itm-cart-" + itm.item.name +"-" +cart.id+ "-" + itm.item.id}
                       initial={{
                         opacity: 0,
                       }}
@@ -624,6 +631,7 @@ export default function POSCartItem({
             <List hover>
               {cartItems.map((itm, index) => (
                 <motion.div
+                  id={"itm-cart-" + itm.item.name +"-" +cart.id+ "-" + itm.item.id}
                   initial={{
                     opacity: 0,
                   }}
